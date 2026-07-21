@@ -96,15 +96,27 @@ export const useConnectionHub = (props: ConnectionHubProps) => {
         connection.on('SuccessInstalled', (profileName) => {
           setIsConnected(true);
           if (profileName == profile?.profileName) {
-            setProfileCardState(EntityState.ENTITY_STATE_ACTIVE);
+            setProfileCardState(EntityState.ENTITY_STATE_NEED_COMPILE);
             setIsPacked(false);
             setIsRestoring(false);
             setPercentStage(0);
             setPercentAllStages(0);
-            setLogs(null);
             toast.success('Успешно', {
               description: `Профиль ${profileName} успешно загружен`,
             });
+          }
+        });
+
+        connection.on('RestoreFailed', (profileName) => {
+          setIsConnected(true);
+          if (profileName == profile?.profileName) {
+            setIsPacked(false);
+            setIsRestoring(false);
+            setPercentStage(0);
+            setPercentAllStages(0);
+            if (profile) {
+              setProfileCardState(profile.state);
+            }
           }
         });
 
@@ -113,13 +125,13 @@ export const useConnectionHub = (props: ConnectionHubProps) => {
           if (profileName == profile?.profileName) {
             setProfileCardState(EntityState.ENTITY_STATE_ACTIVE);
             setIsRestoring(false);
+            setIsPacked(false);
             setPercentStage(0);
-            setLogs(null);
+            setPercentAllStages(0);
+            toast.success('Успешно', {
+              description: `Профиль ${profileName} успешно собран`,
+            });
           }
-
-          toast.success('Успешно', {
-            description: `Профиль ${profileName} успешно собран`,
-          });
         });
       } catch (error) {
         console.log(error);
@@ -137,12 +149,15 @@ export const useConnectionHub = (props: ConnectionHubProps) => {
     setIsPacked(true);
     setIsRestoring(true);
     setProfileCardState(EntityState.ENTITY_STATE_LOADING);
+    setLogs(null);
     connectionHub
       ?.invoke('Restore', profile?.profileName)
       .then(() => {
         setIsConnected(true);
       })
       .catch((error) => {
+        setIsPacked(false);
+        setIsRestoring(false);
         toast.error('Ошибка', {
           description: JSON.stringify(error),
         });
@@ -150,10 +165,6 @@ export const useConnectionHub = (props: ConnectionHubProps) => {
         if (profile) {
           setProfileCardState(profile.state);
         }
-      })
-      .finally(() => {
-        setIsRestoring(false);
-        setProfileCardState(EntityState.ENTITY_STATE_NEED_COMPILE);
       });
   };
 
@@ -167,6 +178,8 @@ export const useConnectionHub = (props: ConnectionHubProps) => {
         setIsConnected(true);
       })
       .catch((error) => {
+        setIsPacked(false);
+        setIsRestoring(false);
         toast.error('Ошибка', {
           description: JSON.stringify(error),
         });
@@ -174,15 +187,11 @@ export const useConnectionHub = (props: ConnectionHubProps) => {
         if (profile) {
           setProfileCardState(profile.state);
         }
-      })
-      .finally(() => {
-        setIsRestoring(false);
-        setProfileCardState(EntityState.ENTITY_STATE_LOADING);
       });
   };
 
   const onBuildDistributive = () => {
-    setIsPacked(false);
+    setIsPacked(true);
     setIsRestoring(true);
     setProfileCardState(EntityState.ENTITY_STATE_PACKING);
     connectionHub
@@ -191,18 +200,15 @@ export const useConnectionHub = (props: ConnectionHubProps) => {
         setIsConnected(true);
       })
       .catch((error) => {
+        setIsPacked(false);
+        setIsRestoring(false);
         toast.error('Ошибка', {
           description: JSON.stringify(error),
         });
 
         if (profile) {
           setProfileCardState(profile.state);
-          setProfileCardState(EntityState.ENTITY_STATE_LOADING);
         }
-      })
-      .finally(() => {
-        setProfileCardState(EntityState.ENTITY_STATE_ACTIVE);
-        setIsRestoring(false);
       });
   };
 

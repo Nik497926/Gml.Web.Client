@@ -50,19 +50,30 @@ export function CreateProfileForm(props: CreateProfileFormProps) {
     minecraftVersion: '0',
   });
 
+  const selectedVersion = form.watch('version');
+  const selectedGameLoader = form.watch('gameLoader');
+
   const loaderVersion = useGetGameVersions(
     {
-      gameLoader: form.watch('gameLoader') as GameLoaderOption,
-      minecraftVersion: form.watch('version'),
+      gameLoader: selectedGameLoader as GameLoaderOption,
+      minecraftVersion: selectedVersion,
     },
     {
-      enabled: form.watch('gameLoader') !== GameLoaderOption.VANILLA.toString(),
+      enabled: selectedGameLoader !== GameLoaderOption.VANILLA.toString(),
     },
   );
 
   useEffect(() => {
-    form.setValue('loaderVersion', loaderVersion.data?.[0]);
-  }, [loaderVersion.data]);
+    if (!loaderVersion.data?.length) {
+      form.setValue('loaderVersion', '');
+      return;
+    }
+
+    const current = form.getValues('loaderVersion');
+    if (!current || !loaderVersion.data.includes(current)) {
+      form.setValue('loaderVersion', loaderVersion.data[0], { shouldDirty: true });
+    }
+  }, [loaderVersion.data, selectedVersion, selectedGameLoader, form]);
 
   const onSubmit: SubmitHandler<CreateProfileFormSchemaType> = async (
     data: CreateProfileFormSchemaType,

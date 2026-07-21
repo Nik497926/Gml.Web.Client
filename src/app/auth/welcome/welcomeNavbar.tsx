@@ -70,7 +70,7 @@ export default function WelcomeNavbar() {
             </NavigationMenuContent>
           </NavigationMenuItem>
           <NavigationMenuItem>
-            <Link href="https://github.com/Gml-Launcher" target="_blank" legacyBehavior passHref>
+            <Link href="https://github.com/Nik497926" target="_blank" legacyBehavior passHref>
               <NavigationMenuLink target={'_blank'}>Github</NavigationMenuLink>
             </Link>
           </NavigationMenuItem>

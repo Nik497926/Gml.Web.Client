@@ -1,11 +1,11 @@
 export const HREF_GET_DATALIFE_ENGINE_AUTH_PHP =
-  'https://raw.githubusercontent.com/GamerVII-NET/Gml.Modules.Auth/master/DLE/auth.php';
+  'https://raw.githubusercontent.com/Nik497926/Gml.Modules.Auth/master/DLE/auth.php';
 export const HREF_GET_NAMELESS_MC_AUTH_PHP =
-  'https://github.com/GamerVII-NET/Gml.Modules.Auth/tree/master/NamelessMC';
+  'https://github.com/Nik497926/Gml.Modules.Auth/tree/master/NamelessMC';
 export const HREF_GET_WEBMCR_RELOADED_AUTH_PHP =
-  'https://github.com/GamerVII-NET/Gml.Modules.Auth/tree/master/WebMCR%20Reload';
+  'https://github.com/Nik497926/Gml.Modules.Auth/tree/master/WebMCR%20Reload';
 export const HREF_GET_WORDPRESS_AUTH_PHP =
-  'https://github.com/GamerVII-NET/Gml.Modules.Auth/tree/master/WordPress';
+  'https://github.com/Nik497926/Gml.Modules.Auth/tree/master/WordPress';
 export const HREF_DOCUMENTATION_CUSTOM_ENDPOINT =
   'https://wiki.recloud.tech/docs/gml-launcher/backend/authorization/custom';
 export const HREF_DISCORD = 'https://discord.com/invite/b5xgqfWgNt';

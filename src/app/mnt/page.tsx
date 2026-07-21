@@ -62,7 +62,7 @@ export default function MntPage() {
                   Подробнее в документации:{' '}
                   <a
                     className={buttonVariants({ variant: 'link' })}
-                    href="https://gml-launcher.github.io/Gml.Docs/profiles-add-files.html#dy4fr9_3"
+                    href="https://nik497926.github.io/Gml.Docs/profiles-add-files.html#dy4fr9_3"
                     target="_blank"
                     rel="noreferrer"
                   >

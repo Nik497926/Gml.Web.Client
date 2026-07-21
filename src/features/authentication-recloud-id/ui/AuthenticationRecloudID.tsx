@@ -134,7 +134,7 @@ export function AuthenticationRecloudID({ onAuthenticated }: AuthenticationReclo
             </Button>
             <Link
               target="_blank"
-              href="https://gml-launcher.github.io/Gml.Docs/gml-marketplace.html"
+              href="https://nik497926.github.io/Gml.Docs/gml-marketplace.html"
             >
               <Button size="lg" variant="outline">
                 Узнать больше

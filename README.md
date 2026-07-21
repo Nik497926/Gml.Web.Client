@@ -25,7 +25,7 @@ Follow these steps to set up and run the project locally:
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/Gml-Launcher/Gml.Web.Client.git
+git clone https://github.com/Nik497926/Gml.Web.Client.git
 cd Gml.Web.Client
 ```
 
@@ -107,4 +107,4 @@ This project is licensed under the [Apache License 2.0](LICENSE).
 ## Contact
 
 For issues or questions, please open an issue on
-the [GitHub Issues page](https://github.com/Gml-Launcher/Gml.Web.Client/issues).
+the [GitHub Issues page](https://github.com/Nik497926/Gml.Web.Client/issues).
