@@ -18,6 +18,10 @@ import {
   TGameVersionsRequest,
   TGameVersionsResponse,
   TGetProfileRequest,
+  TJavaAzulAssignRequest,
+  TJavaDefaultRequest,
+  TJavaUploadRequest,
+  TJavaVersionsRequest,
   TPostLoadProfileModByUrlRequest,
   TPostLoadProfileModRequest,
   TPostProfilesRequest,
@@ -43,7 +47,12 @@ export const profileKeys = {
 
   entities: () => [...profileKeys.all, 'entities'] as const,
 
-  javaVerison: () => [...profileKeys.all, 'javaVerison'] as const,
+  javaVerison: (minecraftVersion?: string) =>
+    [...profileKeys.all, 'javaVerison', minecraftVersion ?? ''] as const,
+  javaRecommend: (minecraftVersion?: string) =>
+    [...profileKeys.all, 'javaRecommend', minecraftVersion ?? ''] as const,
+  javaMeta: (profileName?: string) =>
+    [...profileKeys.all, 'javaMeta', profileName ?? ''] as const,
   gameVersions: (version: string) => [...profileKeys.entities(), version, 'versions'] as const,
 };
 
@@ -275,10 +284,78 @@ export const useGetGameVersions = (
   });
 };
 
-export const useGetJavaVersions = () => {
+export const useGetJavaVersions = (minecraftVersion?: string, params?: Omit<TJavaVersionsRequest, 'minecraftVersion'>) => {
   return useQuery({
-    queryKey: profileKeys.javaVerison(),
-    queryFn: () => profileService.getJavaVersions(),
+    queryKey: [...profileKeys.javaVerison(minecraftVersion), params ?? {}],
+    queryFn: () =>
+      profileService.getJavaVersions({
+        minecraftVersion,
+        ...params,
+      }),
     select: (data) => data.data.data,
+    enabled: Boolean(minecraftVersion),
+  });
+};
+
+export const useGetJavaRecommend = (minecraftVersion?: string) => {
+  return useQuery({
+    queryKey: profileKeys.javaRecommend(minecraftVersion),
+    queryFn: () => profileService.getJavaRecommend({ minecraftVersion }),
+    select: (data) => data.data.data,
+    enabled: Boolean(minecraftVersion),
+  });
+};
+
+export const useGetProfileJavaMeta = (profileName?: string) => {
+  return useQuery({
+    queryKey: profileKeys.javaMeta(profileName),
+    queryFn: () => profileService.getProfileJavaMeta(profileName!),
+    select: (data) => data.data.data,
+    enabled: Boolean(profileName),
+  });
+};
+
+export const useAssignAzulJava = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (body: TJavaAzulAssignRequest) => profileService.assignAzulJava(body),
+    onSuccess: async (_data, variables) => {
+      await queryClient.invalidateQueries({ queryKey: profileKeys.javaMeta(variables.profileName) });
+      toast.success('Java Azul привязана к профилю');
+    },
+    onError: (error) => {
+      isAxiosError(error);
+    },
+  });
+};
+
+export const useUploadProfileJava = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (body: TJavaUploadRequest) => profileService.uploadJava(body),
+    onSuccess: async (_data, variables) => {
+      await queryClient.invalidateQueries({ queryKey: profileKeys.javaMeta(variables.profileName) });
+      toast.success('Своя Java загружена');
+    },
+    onError: (error) => {
+      isAxiosError(error);
+    },
+  });
+};
+
+export const useSetDefaultProfileJava = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (body: TJavaDefaultRequest) => profileService.setDefaultJava(body),
+    onSuccess: async (_data, variables) => {
+      await queryClient.invalidateQueries({ queryKey: profileKeys.javaMeta(variables.profileName) });
+      toast.success('Выбрана Java по умолчанию');
+    },
+    onError: (error) => {
+      isAxiosError(error);
+    },
   });
 };

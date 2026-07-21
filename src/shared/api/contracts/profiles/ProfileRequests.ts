@@ -1,10 +1,12 @@
 import {
-  GameLoaderOption,
+  JavaRecommendEntity,
   JavaVersionBaseEntity,
   PlayerBaseEntity,
   ProfileBaseEntity,
   ProfileExtendedBaseEntity,
-} from '@/shared/api/contracts';
+  ProfileJavaMetaEntity,
+} from './ProfileBaseEntity';
+import { GameLoaderOption } from './ProfileServerTypes';
 import { ResponseBaseEntity } from '@/shared/api/schemas';
 import { OsArchitectureEnum } from '@/shared/enums'; // Получение профилей
 
@@ -107,7 +109,54 @@ export type TGameVersionsResponse = ResponseBaseEntity & {
   data: string[];
 };
 
-export type TJavaVersionsRequest = {};
+export type TJavaVersionsRequest = {
+  minecraftVersion?: string;
+  os?: string;
+  arch?: string;
+};
 export type TJavaVersionsResponse = ResponseBaseEntity & {
   data: JavaVersionBaseEntity[];
+};
+
+export type TJavaRecommendRequest = {
+  minecraftVersion?: string;
+};
+export type TJavaRecommendResponse = ResponseBaseEntity & {
+  data: JavaRecommendEntity;
+};
+
+export type TJavaAzulAssignRequest = {
+  profileName: string;
+  packageUuid?: string | null;
+  downloadUrl?: string | null;
+  name?: string | null;
+  version?: string | null;
+  majorVersion?: number;
+  os?: string | null;
+  arch?: string | null;
+};
+
+export type TJavaAzulAssignResponse = ResponseBaseEntity & {
+  data: ProfileJavaMetaEntity;
+};
+
+export type TJavaUploadRequest = {
+  profileName: string;
+  file: File;
+};
+
+export type TJavaUploadResponse = ResponseBaseEntity & {
+  data: ProfileJavaMetaEntity;
+};
+
+export type TJavaDefaultRequest = {
+  profileName: string;
+};
+
+export type TJavaDefaultResponse = ResponseBaseEntity & {
+  data: ProfileJavaMetaEntity;
+};
+
+export type TJavaMetaResponse = ResponseBaseEntity & {
+  data: ProfileJavaMetaEntity;
 };

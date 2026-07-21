@@ -14,6 +14,16 @@ import {
   TGetProfileRequest,
   TGetProfileResponse,
   TGetProfilesResponse,
+  TJavaAzulAssignRequest,
+  TJavaAzulAssignResponse,
+  TJavaDefaultRequest,
+  TJavaDefaultResponse,
+  TJavaMetaResponse,
+  TJavaRecommendRequest,
+  TJavaRecommendResponse,
+  TJavaUploadRequest,
+  TJavaUploadResponse,
+  TJavaVersionsRequest,
   TJavaVersionsResponse,
   TPostLoadProfileModByUrlRequest,
   TPostLoadProfileModByUrlResponse,
@@ -137,8 +147,50 @@ class ProfileService {
     );
   }
 
-  async getJavaVersions(): Promise<AxiosResponse<TJavaVersionsResponse, any>> {
-    return await $api.get<TJavaVersionsResponse>(`${this.BASE_URL}/versions/java`);
+  async getJavaVersions(
+    params?: TJavaVersionsRequest,
+  ): Promise<AxiosResponse<TJavaVersionsResponse, any>> {
+    return await $api.get<TJavaVersionsResponse>(`${this.BASE_URL}/versions/java`, {
+      params,
+    });
+  }
+
+  async getJavaRecommend(
+    params?: TJavaRecommendRequest,
+  ): Promise<AxiosResponse<TJavaRecommendResponse, any>> {
+    return await $api.get<TJavaRecommendResponse>(`${this.BASE_URL}/java/recommend`, {
+      params,
+    });
+  }
+
+  async getProfileJavaMeta(
+    profileName: string,
+  ): Promise<AxiosResponse<TJavaMetaResponse, any>> {
+    return await $api.get<TJavaMetaResponse>(`${this.BASE_URL}/${profileName}/java`);
+  }
+
+  async assignAzulJava({
+    profileName,
+    ...body
+  }: TJavaAzulAssignRequest): Promise<AxiosResponse<TJavaAzulAssignResponse, any>> {
+    return await $api.post<TJavaAzulAssignResponse>(`${this.BASE_URL}/${profileName}/java/azul`, body);
+  }
+
+  async uploadJava({
+    profileName,
+    file,
+  }: TJavaUploadRequest): Promise<AxiosResponse<TJavaUploadResponse, any>> {
+    const data = new FormData();
+    data.append('file', file);
+    return await $api.post<TJavaUploadResponse>(`${this.BASE_URL}/${profileName}/java/upload`, data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  }
+
+  async setDefaultJava({
+    profileName,
+  }: TJavaDefaultRequest): Promise<AxiosResponse<TJavaDefaultResponse, any>> {
+    return await $api.post<TJavaDefaultResponse>(`${this.BASE_URL}/${profileName}/java/default`);
   }
 }
 

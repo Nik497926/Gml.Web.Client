@@ -47,10 +47,34 @@ export type ProfileFileBaseEntity = {
   hash: string;
 };
 
+export type JavaRuntimeSource = 'default' | 'azul' | 'upload';
+
 export type JavaVersionBaseEntity = {
   name: string;
   version: string;
   majorVersion: number;
+  source?: JavaRuntimeSource | string;
+  downloadUrl?: string | null;
+  packageUuid?: string | null;
+  os?: string | null;
+  arch?: string | null;
+  recommended?: boolean;
+};
+
+export type JavaRecommendEntity = {
+  majorVersion: number;
+  label: string;
+  minecraftVersion: string;
+};
+
+export type ProfileJavaMetaEntity = {
+  source: JavaRuntimeSource | string;
+  javaMajor: number;
+  runtimeId?: string | null;
+  javaPath?: string | null;
+  name?: string | null;
+  version?: string | null;
+  packageUuid?: string | null;
 };
 
 export type ProfileFolderBaseEntity = {

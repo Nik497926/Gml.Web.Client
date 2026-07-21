@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Ubuntu_Mono } from 'next/font/google';
 import { SubmitHandler, useForm } from 'react-hook-form';
-import { ArrowBigDownDash, ChevronsUpDown, Package2Icon } from 'lucide-react';
+import { ArrowBigDownDash, ChevronsUpDown, Package2Icon, Upload } from 'lucide-react';
 
 import { useConnectionHub } from '../lib/useConnectionHub';
 
@@ -17,6 +17,14 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, } from '@/shared/ui/command';
 import { Separator } from '@/shared/ui/separator';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover';
+import { Badge } from '@/shared/ui/badge';
+import { Input } from '@/shared/ui/input';
+import {
+  useGetJavaRecommend,
+  useGetJavaVersions,
+  useGetProfileJavaMeta,
+  useUploadProfileJava,
+} from '@/shared/hooks/useProfiles';
 
 interface DownloadClientHubProps {
   profile?: ProfileExtendedBaseEntity;
@@ -28,6 +36,19 @@ const ubuntuMono = Ubuntu_Mono({
   variable: '--font-sans',
   weight: '400',
 });
+
+function formatJavaLabel(version: JavaVersionBaseEntity) {
+  return `${version.name}@${version.version}`;
+}
+
+function parseJavaVersion(value?: string): JavaVersionBaseEntity | null {
+  if (!value) return null;
+  try {
+    return JSON.parse(value) as JavaVersionBaseEntity;
+  } catch {
+    return null;
+  }
+}
 
 export function DownloadClientHub(props: DownloadClientHubProps) {
   const [javaVersionsOpen, setJavaVersionsOpen] = useState(false);
@@ -45,10 +66,21 @@ export function DownloadClientHub(props: DownloadClientHubProps) {
     logs,
   } = useConnectionHub(props);
 
-  // const javaVersions = useGetJavaVersions();
-  const javaVersions: { data?: JavaVersionBaseEntity[] } = { data: [] };
+  const javaVersions = useGetJavaVersions(props.profile?.minecraftVersion);
+  const recommend = useGetJavaRecommend(props.profile?.minecraftVersion);
+  const javaMeta = useGetProfileJavaMeta(props.profile?.profileName);
+  const uploadJava = useUploadProfileJava();
+
+  const azulVersions = useMemo(
+    () =>
+      (javaVersions.data ?? []).filter(
+        (version) => version.source !== 'default' && version.version !== 'default',
+      ),
+    [javaVersions.data],
+  );
 
   const form = useForm<RestoreProfileSchemaType>();
+  const selectedJava = parseJavaVersion(form.watch('javaVersion'));
 
   const onSubmit: SubmitHandler<RestoreProfileSchemaType> = async (
     data: RestoreProfileSchemaType,
@@ -59,7 +91,34 @@ export function DownloadClientHub(props: DownloadClientHubProps) {
     }
 
     const selectedJavaVersion = JSON.parse(data.javaVersion) as JavaVersionBaseEntity;
+    if (!selectedJavaVersion.source || selectedJavaVersion.source === 'default') {
+      onDownloadDistributive();
+      return;
+    }
+
     onDownloadJavaDistributive(selectedJavaVersion);
+  };
+
+  const onUploadOwnJava = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file || !props.profile?.profileName) return;
+
+    const response = await uploadJava.mutateAsync({
+      profileName: props.profile.profileName,
+      file,
+    });
+
+    const meta = response.data.data;
+    const uploadedVersion: JavaVersionBaseEntity = {
+      name: meta.name || file.name,
+      version: meta.version || meta.runtimeId || 'custom',
+      majorVersion: meta.javaMajor || 0,
+      source: 'upload',
+      recommended: false,
+    };
+
+    form.setValue('javaVersion', JSON.stringify(uploadedVersion));
   };
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -68,6 +127,8 @@ export function DownloadClientHub(props: DownloadClientHubProps) {
       textareaRef.current.scrollTop = textareaRef.current.scrollHeight;
     }
   }, [logs]);
+
+  const currentJavaPath = javaMeta.data?.javaPath || props.profile?.javaPath;
 
   return (
     <>
@@ -86,6 +147,19 @@ export function DownloadClientHub(props: DownloadClientHubProps) {
                   <p className="text-sm text-gray-700 dark:text-gray-300">
                     Необходимо загрузить клиент
                   </p>
+                  {recommend.data && props.profile?.minecraftVersion && (
+                    <p className="text-sm text-muted-foreground">
+                      Для Minecraft {props.profile.minecraftVersion} рекомендуется Java{' '}
+                      {recommend.data.majorVersion}
+                      {recommend.data.label ? ` (${recommend.data.label})` : ''}
+                    </p>
+                  )}
+                  {currentJavaPath && (
+                    <p className="text-xs text-muted-foreground break-all">
+                      Текущий runtime: {currentJavaPath}
+                      {javaMeta.data?.source ? ` · ${javaMeta.data.source}` : ''}
+                    </p>
+                  )}
                 </div>
 
                 <FormField
@@ -103,58 +177,67 @@ export function DownloadClientHub(props: DownloadClientHubProps) {
                               className="w-full flex justify-between items-center"
                             >
                               <span className="truncate grow mr-2 text-start">
-                                {field.value && (JSON.parse(field.value) as JavaVersionBaseEntity)
-                                  ? `${(JSON.parse(field.value) as JavaVersionBaseEntity).name}@${(JSON.parse(field.value) as JavaVersionBaseEntity).version}`
-                                  : 'По умолчанию'}
+                                {selectedJava ? formatJavaLabel(selectedJava) : 'По умолчанию'}
                               </span>
                               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50"/>
                             </Button>
                           </PopoverTrigger>
-                          <PopoverContent>
+                          <PopoverContent className="w-[320px] p-0">
                             <Command>
                               <CommandInput placeholder="Поиск версий..."/>
                               <CommandList>
-                                <CommandEmpty>Версия не найдена</CommandEmpty>
-                                <CommandGroup>
+                                <CommandEmpty>
+                                  {javaVersions.isLoading ? 'Загрузка...' : 'Версия не найдена'}
+                                </CommandEmpty>
+                                <CommandGroup heading="По умолчанию">
                                   <CommandItem
                                     onSelect={() => {
                                       form.resetField('javaVersion');
                                       onOpenJavaVersionsChange();
                                     }}
                                   >
-                                    <div className="flex items-center gap-x-5">
-                                      <div className="flex flex-col gap-y-1">
-                                        <span className="font-bold">По умолчанию</span>
-                                        <span className="text-muted-foreground">
-                                          На выбор сервера
-                                        </span>
-                                      </div>
+                                    <div className="flex flex-col gap-y-1">
+                                      <span className="font-bold">По умолчанию</span>
+                                      <span className="text-muted-foreground">
+                                        Bootstrap Gml.Core
+                                      </span>
                                     </div>
                                   </CommandItem>
-                                  <Separator className="my-2"/>
-                                  {javaVersions.data &&
-                                    javaVersions.data.map((version, i) => (
-                                      <CommandItem
-                                        value={JSON.stringify(version)}
-                                        key={`${version.name}-${version.version}-${i}`}
-                                        onSelect={() => {
-                                          field.onChange(JSON.stringify(version));
-                                          onOpenJavaVersionsChange();
-                                        }}
-                                      >
-                                        <div className="flex items-center gap-x-5">
-                                          <span className="font-extrabold text-md">
-                                            {version.majorVersion}
-                                          </span>
-                                          <div className="flex flex-col gap-y-1">
-                                            <span className="font-bold">{version.name}</span>
-                                            <span className="text-muted-foreground">
-                                              {version.version}
-                                            </span>
+                                </CommandGroup>
+                                <Separator className="my-1"/>
+                                <CommandGroup heading="Azul Zulu">
+                                  {azulVersions.map((version, i) => (
+                                    <CommandItem
+                                      value={JSON.stringify(version)}
+                                      key={`${version.packageUuid || version.name}-${version.version}-${i}`}
+                                      onSelect={() => {
+                                        field.onChange(JSON.stringify(version));
+                                        onOpenJavaVersionsChange();
+                                      }}
+                                    >
+                                      <div className="flex items-center gap-x-3 w-full">
+                                        <span className="font-extrabold text-md min-w-6">
+                                          {version.majorVersion}
+                                        </span>
+                                        <div className="flex flex-col gap-y-1 min-w-0 grow">
+                                          <div className="flex items-center gap-x-2">
+                                            <span className="font-bold truncate">{version.name}</span>
+                                            {version.recommended && (
+                                              <Badge variant="secondary" className="shrink-0">
+                                                рек.
+                                              </Badge>
+                                            )}
                                           </div>
+                                          <span className="text-muted-foreground truncate">
+                                            {version.version}
+                                            {version.os || version.arch
+                                              ? ` · ${[version.os, version.arch].filter(Boolean).join('/')}`
+                                              : ''}
+                                          </span>
                                         </div>
-                                      </CommandItem>
-                                    ))}
+                                      </div>
+                                    </CommandItem>
+                                  ))}
                                 </CommandGroup>
                               </CommandList>
                             </Command>
@@ -165,11 +248,46 @@ export function DownloadClientHub(props: DownloadClientHubProps) {
                     </FormItem>
                   )}
                 />
+
+                <div className="flex flex-col gap-y-2">
+                  <FormLabel>Загрузить свою Java</FormLabel>
+                  <div className="flex gap-x-2">
+                    <Input
+                      type="file"
+                      accept=".zip,.tar.gz,.tgz,application/zip,application/gzip,application/x-gzip,application/x-tar"
+                      className="cursor-pointer"
+                      disabled={
+                        !props.profile?.profileName || uploadJava.isPending || isDisable || !isConnected
+                      }
+                      onChange={onUploadOwnJava}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Архив JDK (.zip / .tar.gz). После загрузки выберите «Загрузить» для restore.
+                  </p>
+                  {uploadJava.isPending && (
+                    <p className="text-xs text-muted-foreground flex items-center gap-x-2">
+                      <Icons.spinner className="h-3 w-3 animate-spin"/>
+                      Распаковка JDK...
+                    </p>
+                  )}
+                  {selectedJava?.source === 'upload' && (
+                    <p className="text-xs text-muted-foreground flex items-center gap-x-1">
+                      <Upload className="h-3 w-3"/>
+                      Выбрана загруженная Java: {formatJavaLabel(selectedJava)}
+                    </p>
+                  )}
+                </div>
+
                 <div className="flex gap-x-2 mt-auto">
                   <Button
                     className="w-fit font-semibold"
                     disabled={
-                      !isConnected || isDisable || !props.profile || !props.profile.hasUpdate
+                      !isConnected ||
+                      isDisable ||
+                      !props.profile ||
+                      !props.profile.hasUpdate ||
+                      uploadJava.isPending
                     }
                   >
                     {isDisable && <Icons.spinner className="mr-2 h-4 w-4 animate-spin"/>}
@@ -201,22 +319,6 @@ export function DownloadClientHub(props: DownloadClientHubProps) {
                 Собрать
               </Button>
             </div>
-
-            {/*{props.profile && props.profile.state === EntityState.ENTITY_STATE_LOADING && (*/}
-            {/*  <div className="absolute w-full z-[10] flex items-center justify-center mt-12">*/}
-            {/*    <Card className="p-3 w-[80%]">*/}
-            {/*      <CardHeader className="font-bold text-xl">*/}
-            {/*        <div className="flex items-center gap3">*/}
-            {/*          <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />*/}
-            {/*          <span>Сборка недоступна</span>*/}
-            {/*        </div>*/}
-            {/*      </CardHeader>*/}
-            {/*      <CardContent className="content text-gray-700 dark:text-gray-300">*/}
-            {/*        Во время загрузки сборка недоступна*/}
-            {/*      </CardContent>*/}
-            {/*    </Card>*/}
-            {/*  </div>*/}
-            {/*)}*/}
           </div>
 
           <div className="flex flex-col gap-y-4 col-span-1 xl:col-span-2 min-[1920px]:col-span-1">

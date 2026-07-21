@@ -71,7 +71,18 @@ export const EditSettingsPlatformForm: React.FC<{ showOnlyApiKeys?: boolean }> =
   const onSubmit: SubmitHandler<EditSettingsPlatformSchemaType> = async (
     body: EditSettingsPlatformSchemaType,
   ) => {
-    await mutateAsync(body);
+    await mutateAsync({
+      registrationIsEnabled: Boolean(body.registrationIsEnabled),
+      storageType: Number(body.storageType),
+      curseForgeKey: body.curseForgeKey ?? '',
+      vkKey: body.vkKey ?? '',
+      storageHost: body.storageHost ?? '',
+      storageLogin: body.storageLogin ?? '',
+      storagePassword: body.storagePassword ?? '',
+      textureProtocol: Number(body.textureProtocol),
+      sentryNeedAutoClear: Boolean(body.sentryNeedAutoClear),
+      sentryAutoClearPeriod: body.sentryAutoClearPeriod || '00:05:00',
+    });
   };
 
   return (
