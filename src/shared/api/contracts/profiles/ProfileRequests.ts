@@ -1,12 +1,13 @@
 import {
   JavaRecommendEntity,
   JavaVersionBaseEntity,
-  PlayerBaseEntity,
   ProfileBaseEntity,
   ProfileExtendedBaseEntity,
   ProfileJavaMetaEntity,
 } from './ProfileBaseEntity';
 import { GameLoaderOption } from './ProfileServerTypes';
+
+import { PlayerBaseEntity } from '@/shared/api/contracts/user/UserBaseEntitry';
 import { ResponseBaseEntity } from '@/shared/api/schemas';
 import { OsArchitectureEnum } from '@/shared/enums'; // Получение профилей
 

@@ -325,7 +325,7 @@ export const useAssignAzulJava = () => {
       toast.success('Java Azul привязана к профилю');
     },
     onError: (error) => {
-      isAxiosError(error);
+      isAxiosError({ toast, error });
     },
   });
 };
@@ -340,7 +340,7 @@ export const useUploadProfileJava = () => {
       toast.success('Своя Java загружена');
     },
     onError: (error) => {
-      isAxiosError(error);
+      isAxiosError({ toast, error });
     },
   });
 };
@@ -355,7 +355,7 @@ export const useSetDefaultProfileJava = () => {
       toast.success('Выбрана Java по умолчанию');
     },
     onError: (error) => {
-      isAxiosError(error);
+      isAxiosError({ toast, error });
     },
   });
 };
