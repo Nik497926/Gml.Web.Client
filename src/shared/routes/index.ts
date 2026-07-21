@@ -16,4 +16,5 @@ export const DASHBOARD_PAGES = {
   MARKETPLACE: '/dashboard/marketplace',
   SENTRY: '/dashboard/sentry',
   PLAYERS: '/dashboard/players',
+  FILES: '/dashboard/files',
 };

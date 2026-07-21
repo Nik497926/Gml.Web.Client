@@ -25,7 +25,8 @@ export const MarketplaceCallbackPage = () => {
       return;
     }
 
-    // Exchange the code for a token
+    // Exchange the code for a token via Market API
+    // Market must call Unicore: POST {OAUTH_API}/oauth/token with client_secret
     fetch(`${process.env.NEXT_PUBLIC_MARKETPLACE_URL}/api/v1/marketplace/code`, {
       method: 'POST',
       headers: {
@@ -37,14 +38,34 @@ export const MarketplaceCallbackPage = () => {
         redirect_uri: `${window.location.origin}/dashboard/marketplace/callback`,
       }),
     })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`Ошибка получения токена: ${response.status} ${response.statusText}`);
+      .then(async (response) => {
+        const raw = await response.text();
+        let payload: Record<string, unknown> = {};
+        try {
+          payload = raw ? JSON.parse(raw) : {};
+        } catch {
+          payload = { message: raw };
         }
-        return response.json();
+
+        if (!response.ok) {
+          const details =
+            (payload.message as string) ||
+            (payload.error_description as string) ||
+            (payload.error as string) ||
+            raw ||
+            response.statusText;
+          console.error('Marketplace /code error:', response.status, payload);
+          throw new Error(`Ошибка получения токена: ${response.status} — ${details}`);
+        }
+
+        return payload as { access_token?: string };
       })
       .then((data) => {
         console.log('Token received:', data);
+
+        if (!data.access_token) {
+          throw new Error('В ответе маркета нет access_token');
+        }
 
         // Store the access token
         setStorageRecloudIDAccessToken(data.access_token);
@@ -53,8 +74,6 @@ export const MarketplaceCallbackPage = () => {
 
         // Redirect back to marketplace page after a short delay
         setTimeout(() => {
-          // Add a query parameter to indicate successful authentication
-          // This will be used by the marketplace page to trigger the onAuthenticated callback
           router.push(`${DASHBOARD_PAGES.MARKETPLACE}?auth=success`);
         }, 1500);
       })

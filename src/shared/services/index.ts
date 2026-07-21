@@ -12,3 +12,4 @@ export {
 } from './AuthTokenService';
 export { profileService } from './ProfileService';
 export { modService } from './ModService';
+export { fileManagerService } from './FileManagerService';

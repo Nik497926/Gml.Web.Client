@@ -9,12 +9,15 @@ export const getStorageProfile = () => {
 };
 
 export const setStorageProfile = (apiProfile: ApiUserBaseEntity) => {
+  const rawPerm = apiProfile.perm;
+  const perm = Array.isArray(rawPerm) ? rawPerm : rawPerm ? [rawPerm] : [];
+
   const profile: UserBaseEntity = {
     name: apiProfile['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'],
     email: apiProfile['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'],
     role: apiProfile['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'],
     exp: apiProfile.exp,
-    perm: apiProfile.perm,
+    perm,
   };
 
   Cookies.set('profile', JSON.stringify(profile), {

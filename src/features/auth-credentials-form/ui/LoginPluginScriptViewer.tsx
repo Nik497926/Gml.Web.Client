@@ -38,30 +38,31 @@ export const LoginPluginScriptViewer = () => {
         setError(null);
 
         const response = await PluginRegistry.getPluginScriptByPlace(PluginPlace.AfterLoginForm);
+
+        if (!response.data) {
+          setScriptContent(null);
+          setRenderedComponent(null);
+          return;
+        }
+
         setScriptContent(response.data);
 
-        // Try to evaluate and render the script content if it contains React components
         try {
-          // This is a simplified approach - in a real implementation, you would need
-          // a more robust way to safely evaluate and render external JS code
           const evalScript = new Function('React', 'return ' + response.data);
           const Component = evalScript(require('react'));
 
           if (typeof Component === 'function') {
-            // If the script returns a React component
             setRenderedComponent(<DynamicComponent component={Component} />);
           } else {
-            // If it's not a component, just display the script
             setRenderedComponent(null);
           }
-        } catch (evalError) {
-          console.warn('Could not evaluate script as React component:', evalError);
-          // If evaluation fails, we'll just display the raw script
+        } catch {
           setRenderedComponent(null);
         }
-      } catch (error) {
-        console.error('Error fetching plugin script:', error);
-        setError(error instanceof Error ? error.message : 'Failed to load plugin script');
+      } catch {
+        setScriptContent(null);
+        setRenderedComponent(null);
+        setError(null);
       } finally {
         setIsLoading(false);
       }

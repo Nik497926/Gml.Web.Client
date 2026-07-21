@@ -6,3 +6,4 @@ export * from './useSentry';
 export * from './useServers';
 export * from './useSettings';
 export * from './useWhitelist';
+export * from './useFileManager';

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
@@ -20,6 +20,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/shared/ui/textarea';
 import { FormCombobox } from '@/shared/ui/FormCombobox';
 import { convertGameLoaderImage } from '@/shared/converters';
+
+/** Newest first (e.g. 21.11.44 before 21.1.1) */
+const compareVersionsDesc = (a: string, b: string) => {
+  const parse = (value: string) =>
+    value.split(/[^0-9]+/).filter(Boolean).map((part) => Number.parseInt(part, 10) || 0);
+
+  const left = parse(a);
+  const right = parse(b);
+  const length = Math.max(left.length, right.length);
+
+  for (let i = 0; i < length; i++) {
+    const diff = (right[i] || 0) - (left[i] || 0);
+    if (diff !== 0) return diff;
+  }
+
+  return 0;
+};
 
 interface CreateProfileFormProps extends React.HTMLAttributes<HTMLDivElement> {
   profile?: ProfileExtendedBaseEntity;
@@ -63,17 +80,22 @@ export function CreateProfileForm(props: CreateProfileFormProps) {
     },
   );
 
+  const loaderVersionsNewestFirst = useMemo(
+    () => (loaderVersion.data ? [...loaderVersion.data].sort(compareVersionsDesc) : []),
+    [loaderVersion.data],
+  );
+
   useEffect(() => {
-    if (!loaderVersion.data?.length) {
+    if (!loaderVersionsNewestFirst.length) {
       form.setValue('loaderVersion', '');
       return;
     }
 
     const current = form.getValues('loaderVersion');
-    if (!current || !loaderVersion.data.includes(current)) {
-      form.setValue('loaderVersion', loaderVersion.data[0], { shouldDirty: true });
+    if (!current || !loaderVersionsNewestFirst.includes(current)) {
+      form.setValue('loaderVersion', loaderVersionsNewestFirst[0], { shouldDirty: true });
     }
-  }, [loaderVersion.data, selectedVersion, selectedGameLoader, form]);
+  }, [loaderVersionsNewestFirst, selectedVersion, selectedGameLoader, form]);
 
   const onSubmit: SubmitHandler<CreateProfileFormSchemaType> = async (
     data: CreateProfileFormSchemaType,
@@ -201,12 +223,12 @@ export function CreateProfileForm(props: CreateProfileFormProps) {
                     name={field.name}
                     value={field.value}
                     placeholder={
-                      loaderVersion.data?.length
+                      loaderVersionsNewestFirst.length
                         ? 'Выберите версию загрузчика'
                         : 'Данная версия игры не поддерживается загрузчиком'
                     }
                     placeholderInputSearch="Поиск версии загрузчика"
-                    options={loaderVersion && loaderVersion.data}
+                    options={loaderVersionsNewestFirst}
                     description="Данная версия игры не поддерживается загрузчиком"
                     isError={loaderVersion.isError}
                     isLoading={!form.getFieldState('version').isDirty || loaderVersion.isFetching}

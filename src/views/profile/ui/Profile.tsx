@@ -9,6 +9,7 @@ import classes from './styles.module.css';
 
 import { ProfileLoading } from '@/views/profile';
 import { FilesTable } from '@/widgets/files-table';
+import { FileManager } from '@/widgets/file-manager';
 import { DownloadClientHub } from '@/widgets/client-hub';
 import { AddingFilesWhitelistDialog } from '@/widgets/adding-files-whitelist-dialog';
 import { AddingFoldersWhitelistDialog } from '@/widgets/adding-folders-whitelist-dialog';
@@ -20,6 +21,7 @@ import { DASHBOARD_PAGES } from '@/shared/routes';
 import { OsArchitectureEnum, OsTypeEnum } from '@/shared/enums';
 import { useDeleteFilesWhitelist, useDeleteFolderWhitelist, useProfile } from '@/shared/hooks';
 import { getStorageAccessToken, getStorageProfile } from '@/shared/services';
+import { hasPermission, PERMISSIONS } from '@/shared/lib/permissions';
 import {
   FileListBaseEntity,
   FileListFolderBaseEntity,
@@ -79,6 +81,7 @@ export const ProfilePage = ({ params }: { params: { name: string } }) => {
   }, [profile, setPlayers]);
 
   const isVanilla = profile?.loader === GameLoaderType.VANILLA;
+  const canManageProfileFiles = hasPermission(PERMISSIONS.FILES_PROFILE_MANAGE);
 
   useEffect(() => {
     if (isVanilla && activeTab === 'mods') {
@@ -86,6 +89,13 @@ export const ProfilePage = ({ params }: { params: { name: string } }) => {
       router.push(`/dashboard/profile/${params.name}?tab=main`, { scroll: false });
     }
   }, [isVanilla, activeTab, router, params.name]);
+
+  useEffect(() => {
+    if (!canManageProfileFiles && activeTab === 'explorer') {
+      setActiveTab('main');
+      router.push(`/dashboard/profile/${params.name}?tab=main`, { scroll: false });
+    }
+  }, [canManageProfileFiles, activeTab, router, params.name]);
 
   if (isPending || !profile) return <ProfileLoading />;
 
@@ -147,6 +157,11 @@ export const ProfilePage = ({ params }: { params: { name: string } }) => {
           <TabsTrigger className="w-full h-10" value="folders">
             Папки
           </TabsTrigger>
+          {canManageProfileFiles && (
+            <TabsTrigger className="w-full h-10" value="explorer">
+              Проводник
+            </TabsTrigger>
+          )}
           <TabsTrigger className="w-full h-10" value="servers">
             Сервера
           </TabsTrigger>
@@ -275,6 +290,16 @@ export const ProfilePage = ({ params }: { params: { name: string } }) => {
             </div>
           </Section>
         </TabsContent>
+        {canManageProfileFiles && (
+          <TabsContent value="explorer" className={classes.tabs__content}>
+            <Section
+              title="Проводник"
+              subtitle="Просмотр и управление файлами клиента этого профиля"
+            >
+              <FileManager scope="profile" profileName={profile.profileName} />
+            </Section>
+          </TabsContent>
+        )}
         <TabsContent value="servers" className={classes.tabs__content}>
           <Section
             title="Сервера"

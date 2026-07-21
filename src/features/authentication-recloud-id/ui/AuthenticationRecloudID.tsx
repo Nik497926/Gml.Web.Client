@@ -24,9 +24,40 @@ export function AuthenticationRecloudID({ onAuthenticated }: AuthenticationReclo
   }, []);
 
   const handleLogin = () => {
-    // Redirect to RecloudID OAuth authorization endpoint
+    const authorizeUrl = process.env.NEXT_PUBLIC_OAUTH_AUTHORIZE_URL;
+    const clientId = process.env.NEXT_PUBLIC_OAUTH_CLIENT_ID;
+    const scope = process.env.NEXT_PUBLIC_OAUTH_SCOPE || 'profile email';
+
+    if (!authorizeUrl || !clientId) {
+      console.error(
+        'OAuth is not configured. Set NEXT_PUBLIC_OAUTH_AUTHORIZE_URL and NEXT_PUBLIC_OAUTH_CLIENT_ID in .env',
+      );
+      alert(
+        'OAuth не настроен. Укажите NEXT_PUBLIC_OAUTH_AUTHORIZE_URL и NEXT_PUBLIC_OAUTH_CLIENT_ID в .env',
+      );
+      return;
+    }
+
     const redirectUri = `${window.location.origin}/dashboard/marketplace/callback`;
-    const authUrl = `https://oauth.recloud.tech/connect/authorize?response_type=code&client_id=GmlMarket&redirect_uri=${encodeURIComponent(redirectUri)}&scope=email profile roles phone offline_access&state=42e4885a3fff07222f79e85d40a65293d9390a6c1bf078b4`;
+    const state =
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+    try {
+      sessionStorage.setItem('oauth_marketplace_state', state);
+    } catch {
+      // ignore storage errors
+    }
+
+    const authUrl = `${authorizeUrl}?${new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      response_type: 'code',
+      state,
+      scope,
+    }).toString()}`;
+
     window.location.href = authUrl;
   };
 
