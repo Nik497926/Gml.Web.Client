@@ -60,7 +60,19 @@ jobs:
             exit 0
           fi
 
-          npm version "$VERSION" --no-git-tag-version --allow-same-version
+          # npm version mis-parses 4-part tags like 2026.7.21.3 — write JSON directly.
+          export VERSION
+          node <<'EOF'
+          const fs = require('fs');
+          const version = process.env.VERSION;
+          for (const file of ['package.json', 'package-lock.json']) {
+            if (!fs.existsSync(file)) continue;
+            const pkg = JSON.parse(fs.readFileSync(file, 'utf8'));
+            pkg.version = version;
+            if (pkg.packages && pkg.packages['']) pkg.packages[''].version = version;
+            fs.writeFileSync(file, `${JSON.stringify(pkg, null, 2)}\n`);
+          }
+          EOF
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
           echo "package.json version → ${VERSION}"
 
