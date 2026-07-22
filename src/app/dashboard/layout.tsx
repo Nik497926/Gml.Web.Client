@@ -21,9 +21,12 @@ export default function Page({ children }: React.PropsWithChildren) {
         <div className={classes.aside__wrapper}>
           <div className={classes['aside__wrapper-logo']}>
             <Link href="/" className={classes.aside__logo}>
-              <Image src={logo} alt="Gml Frontend" />
-              {config.name}
-              <sup className={classes.version}>{config.version}</sup>
+              <Image src={logo} alt="Gml Panel" />
+              <span className={classes.aside__name}>{config.name}</span>
+              <span className={classes.aside__meta}>
+                <span className={classes.version}>{config.version}</span>
+                <span className={classes.aside__credit}>{config.credit}</span>
+              </span>
             </Link>
           </div>
           <DashboardNavigation />

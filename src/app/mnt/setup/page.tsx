@@ -136,7 +136,7 @@ export default function MntSetupPage() {
 
   return (
     <div className="min-h-screen p-4 sm:p-10 flex flex-col items-center justify-center gap-6">
-      <Image src={logo} alt="Gml Frontend" className="w-12 sm:w-16" />
+      <Image src={logo} alt="Gml Panel" className="w-12 sm:w-16" />
       <h1 className="text-3xl font-bold tracking-tight">{config.name} Установка</h1>
 
       <div className="grid gap-6 w-full max-w-2xl">

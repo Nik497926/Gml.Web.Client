@@ -22,6 +22,18 @@
   @apply w-8;
 }
 
+.aside__name {
+  @apply translate-y-0.5;
+}
+
+.aside__meta {
+  @apply flex flex-col items-start gap-0.5 leading-none;
+}
+
+.aside__credit {
+  @apply text-xs font-normal text-muted-foreground;
+}
+
 .aside__pro {
   @apply mt-auto p-4;
 }

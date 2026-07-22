@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 import { playersService } from '@/shared/services/PlayersService';
@@ -9,6 +9,7 @@ import { TPostBanPlayersRequest, TPostRemovePlayersRequest } from '@/shared/api/
 export const playersKeys = {
   all: ['players'] as const,
   getPlayers: () => [...modsKeys.all, 'getPlayers'] as const,
+  unicoreCabinet: (uuid: string) => [...playersKeys.all, 'unicore', uuid] as const,
   banPlayer: () => [...modsKeys.all, 'banPlayer'] as const,
   pardonPlayer: () => [...modsKeys.all, 'pardonPlayer'] as const,
   removePlayer: () => [...modsKeys.all, 'pardonPlayer'] as const,
@@ -44,6 +45,15 @@ export const usePlayers = (filters: string | PlayersFilters) => {
       if (lastPage.data.length < take) return undefined;
       return allPages.length * take;
     },
+  });
+};
+
+export const useUnicorePlayerCabinet = (uuid: string, enabled: boolean) => {
+  return useQuery({
+    queryKey: playersKeys.unicoreCabinet(uuid),
+    queryFn: () => playersService.getUnicoreCabinet(uuid),
+    enabled: enabled && Boolean(uuid),
+    select: ({ data }) => data,
   });
 };
 

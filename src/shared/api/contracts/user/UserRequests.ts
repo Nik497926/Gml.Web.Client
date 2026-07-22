@@ -42,6 +42,29 @@ export type TGetPlayersResponse = ResponseBaseEntity & {
   data: PlayerBaseEntity[];
 };
 
+export type UnicoreDonateGroupEntity = {
+  name: string;
+  ingameId?: string | null;
+  expired?: string | null;
+};
+
+export type UnicorePlayerServerEntity = {
+  serverId: string;
+  serverName: string;
+  playtime: number;
+  donateGroups: UnicoreDonateGroupEntity[];
+};
+
+export type UnicorePlayerCabinetEntity = {
+  available: boolean;
+  message?: string | null;
+  servers: UnicorePlayerServerEntity[];
+};
+
+export type TGetUnicorePlayerCabinetResponse = ResponseBaseEntity & {
+  data: UnicorePlayerCabinetEntity;
+};
+
 // Бан юзера
 export type TPostBanPlayersRequest = string[];
 export type TPostBanPlayersOptions = { deviceBlock?: boolean };

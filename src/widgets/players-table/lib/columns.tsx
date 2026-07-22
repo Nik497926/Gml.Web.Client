@@ -32,7 +32,10 @@ import {
   usePardonPlayer,
   usePardonPlayerHardware,
   useRemoveUser,
+  useUnicorePlayerCabinet,
 } from '@/shared/hooks/usePlayers';
+import { useActiveAuthIntegrations } from '@/shared/hooks/useIntegrations';
+import { AuthenticationType } from '@/shared/enums/integration';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui/tooltip';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card';
 import { timeAgo } from '@/shared/lib/getFormatDate/getFormatDate';
@@ -44,6 +47,14 @@ import {
   DialogTitle,
 } from '@/shared/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/shared/ui/table';
 
 enum ColumnHeader {
   ICON = '',
@@ -55,6 +66,14 @@ enum ColumnHeader {
   BANNED_HARDWARE = 'Заблокирован по железу',
   IP_ADDRESS = 'IP Адрес',
   ACTIONS = 'Действия',
+}
+
+function formatUnicorePlaytime(value: number) {
+  const total = Math.max(0, Math.floor(value || 0));
+  const hours = Math.floor(total / 60);
+  const minutes = total % 60;
+  if (hours <= 0) return `${minutes} мин`;
+  return `${hours} ч ${minutes} мин`;
 }
 
 export const columnsHelper = createColumnHelper<PlayerBaseEntity>();
@@ -106,6 +125,15 @@ function PlayerDetailsDialog({
     new Set((player.authHistory || []).map((c) => c.address).filter(Boolean)),
   );
 
+  const { data: activeAuth } = useActiveAuthIntegrations();
+  const isUnicore =
+    Number(activeAuth?.authType) === AuthenticationType.AUTHENTICATION_TYPE_UNICORECMS;
+  const {
+    data: unicoreCabinet,
+    isLoading: unicoreLoading,
+    isError: unicoreError,
+  } = useUnicorePlayerCabinet(uuid, open && isUnicore);
+
   const getDeviceIcon = (device?: string) => {
     const d = (device || '').toLowerCase();
     if (
@@ -125,30 +153,31 @@ function PlayerDetailsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[calc(100vh-theme(spacing.16))] overflow-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-3">
+      <DialogContent className="max-w-2xl w-[calc(100vw-2rem)] max-h-[calc(100vh-theme(spacing.16))] overflow-x-hidden overflow-y-auto">
+        <DialogHeader className="min-w-0">
+          <DialogTitle className="flex items-center gap-3 min-w-0">
             <img
               src={$api.getUri() + `/integrations/texture/head/${uuid}`}
               alt="skin"
-              className="w-10 h-10 rounded-lg"
+              className="w-10 h-10 rounded-lg shrink-0"
             />
             <span className="truncate">{player.name}</span>
           </DialogTitle>
-          <DialogDescription>UUID: {player.uuid}</DialogDescription>
+          <DialogDescription className="break-all">UUID: {player.uuid}</DialogDescription>
         </DialogHeader>
         {/* Tabs layout for player card */}
-        <div className="w-full">
-          <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="w-full flex flex-wrap gap-2">
+        <div className="w-full min-w-0 overflow-hidden">
+          <Tabs defaultValue="overview" className="w-full min-w-0">
+            <TabsList className="w-full h-auto flex flex-wrap justify-start gap-1">
               <TabsTrigger value="overview">Обзор</TabsTrigger>
               <TabsTrigger value="textures">Текстуры</TabsTrigger>
               <TabsTrigger value="auth">Авторизации</TabsTrigger>
               <TabsTrigger value="network">Сети/IP</TabsTrigger>
               <TabsTrigger value="server">Сервер</TabsTrigger>
+              {isUnicore && <TabsTrigger value="unicore">Unicore</TabsTrigger>}
             </TabsList>
 
-            <div className="mt-3 min-h-[320px] max-h-[480px] overflow-auto">
+            <div className="mt-3 min-h-[320px] max-h-[480px] overflow-x-hidden overflow-y-auto min-w-0">
               <TabsContent value="overview">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-3">
@@ -215,47 +244,48 @@ function PlayerDetailsDialog({
                 </div>
               </TabsContent>
 
-              <TabsContent value="auth">
-                <div>
-                  <div className="text-sm text-muted-foreground">Авторизации</div>
-                  <div className="mt-2 flex flex-col gap-2 pr-1">
-                    {(player.authHistory || []).map((h, idx) => (
-                      <div key={idx} className="flex items-start gap-3 rounded-md border p-3">
-                        <div className="mt-0.5">{getDeviceIcon(h.device)}</div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <div
-                              className="font-medium truncate"
-                              title={h.device || 'Неизвестное устройство'}
-                              style={{ maxWidth: '100%' }}
-                            >
-                              {h.device || 'Неизвестное устройство'}
-                            </div>
-                            {h.hwid && (
-                              <span
-                                className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground truncate max-w-[180px]"
-                                title={h.hwid}
-                              >
-                                HWID: {h.hwid}
-                              </span>
-                            )}
+              <TabsContent value="auth" className="min-w-0">
+                <div className="min-w-0 space-y-2">
+                  {(player.authHistory || []).map((h, idx) => (
+                    <div
+                      key={idx}
+                      className="flex gap-2.5 rounded-md border p-2.5 min-w-0 overflow-hidden"
+                    >
+                      <div className="mt-0.5 shrink-0">{getDeviceIcon(h.device)}</div>
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <div
+                            className="font-medium text-sm truncate"
+                            title={h.device || 'Неизвестное устройство'}
+                          >
+                            {h.device || 'Неизвестное устройство'}
                           </div>
-                          <div className="mt-1 text-sm font-mono break-words">
-                            {h.address || '-'}
-                          </div>
-                          <div className="mt-1 text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
-                            <span>{timeAgo(h.date)}</span>
-                            <span className="px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                          <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
+                            {timeAgo(h.date)}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                          <span className="font-mono break-all">{h.address || '-'}</span>
+                          {h.protocol && (
+                            <span className="px-1.5 py-0.5 rounded bg-muted text-muted-foreground shrink-0">
                               {h.protocol}
                             </span>
-                          </div>
+                          )}
                         </div>
+                        {h.hwid && (
+                          <div
+                            className="text-[11px] text-muted-foreground font-mono truncate"
+                            title={h.hwid}
+                          >
+                            HWID: {h.hwid}
+                          </div>
+                        )}
                       </div>
-                    ))}
-                    {(!player.authHistory || player.authHistory.length === 0) && (
-                      <div className="text-sm text-muted-foreground">Нет данных.</div>
-                    )}
-                  </div>
+                    </div>
+                  ))}
+                  {(!player.authHistory || player.authHistory.length === 0) && (
+                    <div className="text-sm text-muted-foreground">Нет данных.</div>
+                  )}
                 </div>
               </TabsContent>
 
@@ -285,6 +315,86 @@ function PlayerDetailsDialog({
                   <div className="text-sm text-muted-foreground">Нет данных.</div>
                 )}
               </TabsContent>
+
+              {isUnicore && (
+                <TabsContent value="unicore">
+                  {unicoreLoading && (
+                    <div className="text-sm text-muted-foreground">Загрузка данных Unicore…</div>
+                  )}
+                  {unicoreError && (
+                    <div className="text-sm text-red-500">Не удалось загрузить данные Unicore.</div>
+                  )}
+                  {!unicoreLoading && !unicoreError && unicoreCabinet && (
+                    <div className="space-y-3">
+                      {!unicoreCabinet.available && (
+                        <div className="text-sm text-muted-foreground">
+                          {unicoreCabinet.message || 'Данные Unicore недоступны.'}
+                        </div>
+                      )}
+                      {unicoreCabinet.available && unicoreCabinet.message && (
+                        <div className="text-xs text-amber-600">{unicoreCabinet.message}</div>
+                      )}
+                      {unicoreCabinet.available &&
+                        (unicoreCabinet.servers?.length ? (
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead className="h-9 px-2">Сервер</TableHead>
+                                <TableHead className="h-9 px-2">Привилегия</TableHead>
+                                <TableHead className="h-9 px-2 text-right whitespace-nowrap">
+                                  Наигранное время
+                                </TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {unicoreCabinet.servers.map((server) => (
+                                <TableRow key={server.serverId}>
+                                  <TableCell className="px-2 py-2.5">
+                                    <div className="font-medium truncate max-w-[160px]">
+                                      {server.serverName}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground truncate max-w-[160px]">
+                                      {server.serverId}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="px-2 py-2.5">
+                                    {server.donateGroups?.length ? (
+                                      <div className="flex flex-wrap gap-1">
+                                        {server.donateGroups.map((group, i) => (
+                                          <span
+                                            key={`${group.name}-${group.ingameId || i}`}
+                                            className="px-2 py-0.5 rounded bg-muted text-xs"
+                                            title={
+                                              group.expired
+                                                ? `до ${format(new Date(group.expired), 'dd.MM.yyyy')}`
+                                                : undefined
+                                            }
+                                          >
+                                            {group.name}
+                                            {group.expired
+                                              ? ` · до ${format(new Date(group.expired), 'dd.MM.yyyy')}`
+                                              : ''}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <span className="text-xs text-muted-foreground">—</span>
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="px-2 py-2.5 text-right whitespace-nowrap text-sm">
+                                    {formatUnicorePlaytime(server.playtime)}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        ) : (
+                          <div className="text-sm text-muted-foreground">Нет данных по серверам.</div>
+                        ))}
+                    </div>
+                  )}
+                </TabsContent>
+              )}
             </div>
           </Tabs>
         </div>

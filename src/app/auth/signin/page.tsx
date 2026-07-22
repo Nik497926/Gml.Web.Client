@@ -15,7 +15,7 @@ export default function Page() {
         <div className={classes['login__main-content']}>
           <div className={classes.login__form}>
             <div className={classes.login__details}>
-              <Image src={logo} className={classes.login__logo} alt="Gml Frontend" />
+              <Image src={logo} className={classes.login__logo} alt="Gml Panel" />
               <h1 className={classes.login__title}>Авторизация</h1>
               <p className={classes.login__subtitle}>
                 Введите свой логин и пароль ниже, чтобы войти в свою учетную запись
@@ -32,7 +32,7 @@ export default function Page() {
           </div>
         </div>
         <div className={classes.login__banner}>
-          <Image src={logo} className={classes['login__banner-image']} alt="Gml Frontend" />
+          <Image src={logo} className={classes['login__banner-image']} alt="Gml Panel" />
         </div>
       </div>
     </>

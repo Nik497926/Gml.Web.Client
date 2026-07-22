@@ -15,7 +15,7 @@ export default function Home() {
       <div className="bg-muted flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
         <div className="flex w-full max-w-sm flex-col gap-6">
           <a href="#" className="flex items-center gap-2 self-center font-medium">
-            <Image src={logo} alt="Gml Frontend" className="w-12 sm:w-8" />
+            <Image src={logo} alt="Gml Panel" className="w-12 sm:w-8" />
             {config.name}
           </a>
           <Card>
@@ -38,7 +38,7 @@ export default function Home() {
       </div>
       <div></div>
       {/*<div className="min-h-screen p-4 sm:p-10 flex flex-col items-center justify-center gap-6">*/}
-      {/*  <Image src={logo} alt="Gml Frontend" className="w-12 sm:w-16" />*/}
+      {/*  <Image src={logo} alt="Gml Panel" className="w-12 sm:w-16" />*/}
       {/*  <h1 className="text-3xl font-bold tracking-tight">Добро пожаловать!</h1>*/}
 
       {/*  <div id="nestedPageContent" className="grid gap-6 w-full max-w-4xl">*/}

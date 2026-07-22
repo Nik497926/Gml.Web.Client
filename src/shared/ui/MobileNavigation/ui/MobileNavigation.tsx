@@ -32,9 +32,12 @@ export const MobileNavigation = ({ menu }: MobileNavigationParams) => {
       <SheetContent side="left" className={classes.sheet}>
         <nav className={classes.sheet__navigation}>
           <Link href="/" className={classes.sheet__logo}>
-            <Image src={logo} alt="Gml Frontend" />
-            {config.name}
-            <sup className={classes.version}>{config.version}</sup>
+            <Image src={logo} alt="Gml Panel" />
+            <span className={classes.sheet__name}>{config.name}</span>
+            <span className={classes.sheet__meta}>
+              <span className={classes.version}>{config.version}</span>
+              <span className={classes.sheet__credit}>{config.credit}</span>
+            </span>
           </Link>
           {menu.map(({ icon, path, text }) => (
             <Link

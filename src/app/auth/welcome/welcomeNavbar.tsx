@@ -23,7 +23,7 @@ export default function WelcomeNavbar() {
             href="/"
             className="flex items-center gap-x-2 text-xl sm:text-2xl font-bold whitespace-nowrap"
           >
-            <Image src={logo} alt="Gml Frontend" className="w-8 sm:w-10" />
+            <Image src={logo} alt="Gml Panel" className="w-8 sm:w-10" />
             {config.name}
             <sup className="text-xs text-gray-400">{config.version}</sup>
           </Link>

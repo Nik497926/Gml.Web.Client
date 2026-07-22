@@ -2,6 +2,7 @@ import { $api } from '@/services/api.service';
 import {
   TGetPlayersRequest,
   TGetPlayersResponse,
+  TGetUnicorePlayerCabinetResponse,
   TPostBanPlayersRequest,
   TPostBanPlayersResponse,
   TPostBanPlayersOptions,
@@ -19,6 +20,13 @@ class PlayersService {
     return data;
   }
 
+  async getUnicoreCabinet(uuid: string): Promise<TGetUnicorePlayerCabinetResponse> {
+    const { data } = await $api.get<TGetUnicorePlayerCabinetResponse>(
+      `${this.BASE_URL}/${encodeURIComponent(uuid)}/unicore`,
+    );
+    return data;
+  }
+
   async banPlayer(body: TPostBanPlayersRequest, options?: TPostBanPlayersOptions): Promise<TPostBanPlayersResponse> {
     const { data } = await $api.post<TPostBanPlayersResponse>(
       `${this.BASE_URL}/ban${options?.deviceBlock ? '?deviceBlock=true' : ''}`,
@@ -28,7 +36,10 @@ class PlayersService {
     return data;
   }
 
-  async pardonPlayer(body: TPostBanPlayersRequest, options?: TPostPardonPlayersOptions): Promise<TPostBanPlayersResponse> {
+  async pardonPlayer(
+    body: TPostBanPlayersRequest,
+    options?: TPostPardonPlayersOptions,
+  ): Promise<TPostBanPlayersResponse> {
     const { data } = await $api.post<TPostBanPlayersResponse>(
       `${this.BASE_URL}/pardon${options?.deviceUnblock ? '?deviceUnblock=true' : ''}`,
       body,
