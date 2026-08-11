@@ -63,8 +63,8 @@ export const ModuleCard = ({ module }: ModuleCardProps) => {
       if (error instanceof Error && error.message.startsWith('UNAUTHORIZED:')) {
         console.log('Authentication required for plugin installation');
         setIsAuthRequired(true);
-        toast('Требуется авторизация', {
-          description: 'Для установки расширения необходимо авторизоваться через RecloudID',
+        toast('Требуется ключ маркетплейса', {
+          description: 'Для установки расширения подключите API-ключ с сайта маркетплейса',
         });
       } else {
         toast('Ошибка установки', {

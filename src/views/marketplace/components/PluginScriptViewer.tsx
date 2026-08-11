@@ -120,9 +120,9 @@ export const PluginScriptViewer = ({ plugin }: PluginScriptViewerProps) => {
     return (
       <div className="w-full py-12 text-center bg-muted/30 rounded-lg border border-border">
         <AlertCircle className="h-12 w-12 text-primary mx-auto mb-4" />
-        <h3 className="text-lg font-medium mb-2">Требуется авторизация</h3>
+        <h3 className="text-lg font-medium mb-2">Требуется ключ маркетплейса</h3>
         <p className="text-muted-foreground max-w-md mx-auto">
-          Для доступа к скрипту плагина необходимо авторизоваться через RecloudID.
+          Для доступа к скрипту плагина подключите API-ключ с сайта маркетплейса.
         </p>
         <div className="mt-4">
           <AuthenticationRecloudID onAuthenticated={handleAuthenticated} />

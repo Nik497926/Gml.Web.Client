@@ -31,9 +31,9 @@ export const UnauthorizedState = ({ onAuthenticated }: UnauthorizedStateProps) =
       <div className="max-w-md w-full">
         <Alert variant="destructive" className="mb-4">
           <AlertTriangleIcon className="h-4 w-4" />
-          <AlertTitle>Требуется авторизация</AlertTitle>
+          <AlertTitle>Требуется ключ маркетплейса</AlertTitle>
           <AlertDescription>
-            Для доступа к маркетплейсу необходимо авторизоваться через RecloudID.
+            Для доступа к каталогу подключите API-ключ с сайта маркетплейса.
           </AlertDescription>
         </Alert>
         <AuthenticationRecloudID onAuthenticated={onAuthenticated} />

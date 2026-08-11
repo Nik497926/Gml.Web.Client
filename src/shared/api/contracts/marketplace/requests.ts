@@ -1,5 +1,6 @@
 import { ResponseBaseEntity } from '@/shared/api/schemas';
 import { getStorageRecloudIDAccessToken } from '@/shared/services/AuthTokenService';
+import { getMarketplaceApiUrl } from '@/shared/lib/marketplace-url';
 
 // Category entity type
 export type MarketplaceCategoryEntity = {
@@ -36,10 +37,9 @@ export const getMarketplaceCategories = async (): Promise<TGetMarketplaceCategor
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
-    // Get the marketplace URL from environment variables
-    const marketplaceUrl = process.env.NEXT_PUBLIC_MARKETPLACE_URL;
+    const marketplaceUrl = getMarketplaceApiUrl();
     if (!marketplaceUrl) {
-      throw new Error('Marketplace URL is not defined');
+      throw new Error('Marketplace API URL is not defined');
     }
 
     // Make the API request
@@ -76,10 +76,9 @@ export const getMarketplaceProducts = async (): Promise<TGetMarketplaceProductsR
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
-    // Get the marketplace URL from environment variables
-    const marketplaceUrl = process.env.NEXT_PUBLIC_MARKETPLACE_URL;
+    const marketplaceUrl = getMarketplaceApiUrl();
     if (!marketplaceUrl) {
-      throw new Error('Marketplace URL is not defined');
+      throw new Error('Marketplace API URL is not defined');
     }
 
     // Make the API request

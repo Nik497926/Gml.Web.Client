@@ -14,6 +14,7 @@ import {
 import { Breadcrumbs } from '@/shared/ui/Breadcrumbs';
 import { DASHBOARD_PAGES } from '@/shared/routes';
 import { getStorageRecloudIDAccessToken, removeStorageRecloudIDAccessToken } from '@/shared/services';
+import { getMarketplaceApiUrl } from '@/shared/lib/marketplace-url';
 
 export const MarketplacePage = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -52,23 +53,25 @@ export const MarketplacePage = () => {
           `Using token: ${getStorageRecloudIDAccessToken() ? 'Token exists' : 'No token'}`,
         );
 
+        const marketplaceApiUrl = getMarketplaceApiUrl();
+        if (!marketplaceApiUrl) {
+          throw new Error('Marketplace API URL is not defined');
+        }
+
         // Add a fallback mechanism - if the HTTPS request fails, try HTTP
         let response;
         try {
           console.log('Attempting primary fetch request');
-          response = await fetch(
-            `${process.env.NEXT_PUBLIC_MARKETPLACE_URL}/api/v1/marketplace/status`,
-            {
-              method: 'GET',
-              headers: {
-                Authorization: `Bearer ${getStorageRecloudIDAccessToken()}`,
-                'Content-Type': 'application/json',
-                Accept: 'application/json',
-              },
-              credentials: 'same-origin',
-              signal: controller.signal,
+          response = await fetch(`${marketplaceApiUrl}/api/v1/marketplace/status`, {
+            method: 'GET',
+            headers: {
+              Authorization: `Bearer ${getStorageRecloudIDAccessToken()}`,
+              'Content-Type': 'application/json',
+              Accept: 'application/json',
             },
-          );
+            credentials: 'same-origin',
+            signal: controller.signal,
+          });
           console.log('Primary fetch request completed');
         } catch (fetchError: unknown) {
           console.log(
@@ -76,13 +79,10 @@ export const MarketplacePage = () => {
           );
 
           // Try fallback to HTTP if HTTPS fails (only if using localhost)
-          if (process.env.NEXT_PUBLIC_MARKETPLACE_URL?.includes('localhost')) {
+          if (marketplaceApiUrl.includes('localhost')) {
             try {
               console.log('Attempting fallback HTTP request');
-              const fallbackUrl = process.env.NEXT_PUBLIC_MARKETPLACE_URL.replace(
-                'https://',
-                'http://',
-              );
+              const fallbackUrl = marketplaceApiUrl.replace('https://', 'http://');
               console.log(`Fallback URL: ${fallbackUrl}/api/v1/marketplace/status`);
 
               response = await fetch(`${fallbackUrl}/api/v1/marketplace/status`, {
@@ -188,7 +188,7 @@ export const MarketplacePage = () => {
         if (currentStatus === 'loading') {
           console.log('Still in loading state after authentication, setting to unavailable');
           setErrorMessage(
-            'Превышено время ожидания ответа от сервера маркетплейса после авторизации.',
+            'Превышено время ожидания ответа от сервера маркетплейса после подключения ключа.',
           );
           return 'unavailable';
         }
@@ -197,29 +197,7 @@ export const MarketplacePage = () => {
     }, 10000);
   }, [checkMarketplaceStatus, setErrorMessage, setMarketplaceStatus]);
 
-  // Check for auth=success in URL (runs only once on mount)
-  useEffect(() => {
-    console.log('Checking for auth=success in URL');
-    if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      const authSuccess = urlParams.get('auth') === 'success';
-
-      if (authSuccess) {
-        // Clear the auth parameter from the URL
-        window.history.replaceState({}, document.title, window.location.pathname);
-
-        const accessToken = getStorageRecloudIDAccessToken();
-        if (accessToken) {
-          console.log('Returning from successful authentication with valid token');
-          // Reset the status check flag for fresh authentication
-          statusCheckedRef.current = false;
-          handleAuthenticated();
-        }
-      }
-    }
-  }, []); // Empty dependency array to run only once on mount
-
-  // Check if user is authenticated (runs on mount and when handleAuthenticated changes)
+  // Check if marketplace API key is present (runs on mount and when handleAuthenticated changes)
   useEffect(() => {
     console.log('Authentication check useEffect running');
     const accessToken = getStorageRecloudIDAccessToken();

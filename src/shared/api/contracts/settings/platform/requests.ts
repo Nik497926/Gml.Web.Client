@@ -21,9 +21,17 @@ export type TPutSettingsPlatformRequest = {
   // Sentry auto-clear settings (TimeSpan serialized as string, e.g., "00:05:00", "1.00:00:00")
   sentryNeedAutoClear: boolean;
   sentryAutoClearPeriod: string;
-  unicoreUseExternalTokens: boolean;
+  /** optional — если не передать, сервер не меняет режим токенов Unicore */
+  unicoreUseExternalTokens?: boolean;
 };
 export type TPutSettingsPlatformResponse = ResponseBaseEntity & {};
+
+export type TPutUnicoreTokensRequest = {
+  useExternalTokens: boolean;
+};
+export type TPutUnicoreTokensResponse = ResponseBaseEntity & {
+  data: { useExternalTokens: boolean };
+};
 
 export type TTestSettingsS3Request = {
   storageHost: string;

@@ -13,7 +13,6 @@ export const EditSettingsPlatformSchema = z.object({
   sentryNeedAutoClear: z.boolean(),
   // TimeSpan as string (e.g., "00:05:00" or "1.00:00:00")
   sentryAutoClearPeriod: z.string(),
-  unicoreUseExternalTokens: z.boolean(),
 });
 
 export type EditSettingsPlatformSchemaType = z.infer<typeof EditSettingsPlatformSchema>;

@@ -6,12 +6,15 @@ import {
   TGetSettingsPlatformResponse,
   TPutSettingsPlatformRequest,
   TPutSettingsPlatformResponse,
+  TPutUnicoreTokensRequest,
+  TPutUnicoreTokensResponse,
   TTestSettingsS3Request,
   TTestSettingsS3Response,
 } from '@/shared/api/contracts';
 
 class SettingsService {
   private BASE_URL_PLATFORM = '/settings/platform';
+  private BASE_URL_UNICORE_TOKENS = '/settings/unicore-tokens';
   private BASE_URL_RESTORE = '/settings/restore';
 
   async getPlatform(
@@ -24,6 +27,12 @@ class SettingsService {
     body: TPutSettingsPlatformRequest,
   ): Promise<AxiosResponse<TPutSettingsPlatformResponse>> {
     return await $api.put<TPutSettingsPlatformResponse>(this.BASE_URL_PLATFORM, body);
+  }
+
+  async editUnicoreTokens(
+    body: TPutUnicoreTokensRequest,
+  ): Promise<AxiosResponse<TPutUnicoreTokensResponse>> {
+    return await $api.put<TPutUnicoreTokensResponse>(this.BASE_URL_UNICORE_TOKENS, body);
   }
 
   async testS3(body: TTestSettingsS3Request): Promise<AxiosResponse<TTestSettingsS3Response>> {

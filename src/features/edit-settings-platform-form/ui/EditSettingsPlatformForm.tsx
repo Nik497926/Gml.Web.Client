@@ -43,7 +43,6 @@ export const EditSettingsPlatformForm: React.FC<{ showOnlyApiKeys?: boolean }> =
       storagePassword: '',
       sentryNeedAutoClear: false,
       sentryAutoClearPeriod: '00:05:00',
-      unicoreUseExternalTokens: true,
     },
   });
 
@@ -60,7 +59,6 @@ export const EditSettingsPlatformForm: React.FC<{ showOnlyApiKeys?: boolean }> =
         textureProtocol: Number(platform.textureProtocol ?? Protocol.HTTPS),
         sentryNeedAutoClear: platform.sentryNeedAutoClear ?? false,
         sentryAutoClearPeriod: platform.sentryAutoClearPeriod || '00:05:00',
-        unicoreUseExternalTokens: platform.unicoreUseExternalTokens ?? true,
       });
     }
   }, [platform, isLoading, form]);
@@ -68,7 +66,6 @@ export const EditSettingsPlatformForm: React.FC<{ showOnlyApiKeys?: boolean }> =
   const currentProtocol = typeof window !== 'undefined' ? extractProtocol(`${window.location.origin}/api/v1`) : undefined;
 
   const watchRegistration = form.watch('registrationIsEnabled');
-  const watchUnicoreTokens = form.watch('unicoreUseExternalTokens');
   const watchStorageType = form.watch('storageType');
   const isFormS3Storage = Number(watchStorageType) === StorageType.STORAGE_TYPE_S3;
 
@@ -86,7 +83,6 @@ export const EditSettingsPlatformForm: React.FC<{ showOnlyApiKeys?: boolean }> =
       textureProtocol: Number(body.textureProtocol),
       sentryNeedAutoClear: Boolean(body.sentryNeedAutoClear),
       sentryAutoClearPeriod: body.sentryAutoClearPeriod || '00:05:00',
-      unicoreUseExternalTokens: Boolean(body.unicoreUseExternalTokens),
     });
   };
 
@@ -128,34 +124,6 @@ export const EditSettingsPlatformForm: React.FC<{ showOnlyApiKeys?: boolean }> =
                       </div>
                       <p className="text-sm text-gray-700 dark:text-gray-300">
                         Позволяет регистрироваться новым пользователям на сайте
-                      </p>
-                    </div>
-                    <FormControl>
-                      {isLoading ? (
-                        <Skeleton className="w-12 h-6"/>
-                      ) : (
-                        <Switch checked={field.value} onCheckedChange={field.onChange}/>
-                      )}
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="unicoreUseExternalTokens"
-                render={({field}) => (
-                  <FormItem className="flex flex-row items-center justify-between w-full">
-                    <div className="space-y-0.5">
-                      <div className="flex flex-row items-center gap-x-1 mb-2">
-                        <UsersIcon className="mr-2 h-4 w-4"/>
-                        <h6 className="text-sm font-bold">
-                          Токены Unicore ({watchUnicoreTokens ? 'Вкл' : 'Выкл'})
-                        </h6>
-                      </div>
-                      <p className="text-sm text-gray-700 dark:text-gray-300">
-                        Включено — AccessToken игрока берётся из Unicore. Выключено — выдаётся JWT Gml,
-                        а наигранное время и кабинет по-прежнему читаются через сохранённый Unicore refresh
-                        (нужен хотя бы один вход через лаунчер после смены режима).
                       </p>
                     </div>
                     <FormControl>
