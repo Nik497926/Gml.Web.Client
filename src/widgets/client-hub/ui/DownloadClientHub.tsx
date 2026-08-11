@@ -38,6 +38,9 @@ const ubuntuMono = Ubuntu_Mono({
 });
 
 function formatJavaLabel(version: JavaVersionBaseEntity) {
+  if (version.source === 'azul') {
+    return `${version.name} · все ОС`;
+  }
   return `${version.name}@${version.version}`;
 }
 
@@ -158,6 +161,9 @@ export function DownloadClientHub(props: DownloadClientHubProps) {
                     <p className="text-xs text-muted-foreground break-all">
                       Текущий runtime: {currentJavaPath}
                       {javaMeta.data?.source ? ` · ${javaMeta.data.source}` : ''}
+                      {javaMeta.data?.source === 'azul' && javaMeta.data?.runtimes
+                        ? ` · ${Object.keys(javaMeta.data.runtimes).length} платформ`
+                        : ''}
                     </p>
                   )}
                 </div>
@@ -229,8 +235,11 @@ export function DownloadClientHub(props: DownloadClientHubProps) {
                                             )}
                                           </div>
                                           <span className="text-muted-foreground truncate">
-                                            {version.version}
-                                            {version.os || version.arch
+                                            {version.source === 'azul'
+                                              ? `${version.version} · Windows / Linux / macOS`
+                                              : version.version}
+                                            {version.source !== 'azul' &&
+                                            (version.os || version.arch)
                                               ? ` · ${[version.os, version.arch].filter(Boolean).join('/')}`
                                               : ''}
                                           </span>

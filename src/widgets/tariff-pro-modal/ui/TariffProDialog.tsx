@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { CheckIcon, Copy, LinkIcon, StarIcon } from 'lucide-react';
+import { AlertTriangle, CheckIcon, Copy, LinkIcon, StarIcon } from 'lucide-react';
 
 import {
   Dialog,
@@ -36,9 +36,32 @@ export function TariffProDialog() {
           <h1 className="text-4xl text-center mt-6 mb-2 font-bold leading-none tracking-tight bg-gradient-to-r from-purple-500 to-pink-500 inline-block text-transparent bg-clip-text">
             Перейти на Pro
           </h1>
-          <p className="text-gray-400 text-center mx-5">
+          <p className="text-muted-foreground text-center mx-5 text-sm leading-relaxed">
             Больше свободы, эксклюзивные функции, персональная поддержка от разработчиков
           </p>
+          <div
+            role="note"
+            className="mx-5 mt-4 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-left"
+          >
+            <div className="flex gap-3">
+              <AlertTriangle
+                className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400"
+                aria-hidden
+              />
+              <div className="space-y-1.5">
+                <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">
+                  Важно знать перед покупкой
+                </p>
+                <p className="text-xs leading-relaxed text-amber-900/80 dark:text-amber-100/80">
+                  Эта сборка GML не связана с официальной версией GML и развивается отдельно.
+                </p>
+                <p className="text-xs leading-relaxed text-amber-900/80 dark:text-amber-100/80">
+                  При покупке официального пакета GML Pro разработчики Recloud не несут
+                  ответственности за эту версию продукта и не оказывают по ней поддержку.
+                </p>
+              </div>
+            </div>
+          </div>
         </DialogHeader>
         <Card className="overflow-hidden mt-1" x-chunk="dashboard-05-chunk-4">
           <CardHeader className="flex flex-row items-start bg-muted/50">

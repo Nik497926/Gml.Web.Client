@@ -11,7 +11,7 @@ import {EditSettingsPlatformSchema, EditSettingsPlatformSchemaType} from '../lib
 import {extractProtocol} from '../lib/utils';
 
 import {Protocol, ProtocolOption, StorageType, StorageTypeOption} from '@/shared/enums';
-import {useEditSettingsPlatform, useSettingsPlatform} from '@/shared/hooks';
+import {useEditSettingsPlatform, useSettingsPlatform, useTestSettingsS3} from '@/shared/hooks';
 import {Form, FormControl, FormField, FormItem, FormMessage} from '@/shared/ui/form';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/shared/ui/select';
 import {Button} from '@/shared/ui/button';
@@ -27,6 +27,7 @@ import vk from '@/assets/logos/vk.svg';
 export const EditSettingsPlatformForm: React.FC<{ showOnlyApiKeys?: boolean }> = ({showOnlyApiKeys = false}) => {
   const {data: platform, isLoading} = useSettingsPlatform();
   const {mutateAsync, isPending} = useEditSettingsPlatform();
+  const {mutateAsync: testS3, isPending: isTestingS3} = useTestSettingsS3();
 
   const form = useForm<EditSettingsPlatformSchemaType>({
     disabled: isLoading,
@@ -42,6 +43,7 @@ export const EditSettingsPlatformForm: React.FC<{ showOnlyApiKeys?: boolean }> =
       storagePassword: '',
       sentryNeedAutoClear: false,
       sentryAutoClearPeriod: '00:05:00',
+      unicoreUseExternalTokens: true,
     },
   });
 
@@ -49,15 +51,16 @@ export const EditSettingsPlatformForm: React.FC<{ showOnlyApiKeys?: boolean }> =
     if (platform && !isLoading) {
       form.reset({
         registrationIsEnabled: platform.registrationIsEnabled || false,
-        storageType: platform.storageType || StorageType.STORAGE_TYPE_LOCALSTORAGE,
+        storageType: Number(platform.storageType ?? StorageType.STORAGE_TYPE_LOCALSTORAGE),
         curseForgeKey: platform.curseForgeKey || '',
         vkKey: platform.vkKey || '',
         storageHost: platform.storageHost || '',
         storageLogin: platform.storageLogin || '',
         storagePassword: '',
-        textureProtocol: platform.textureProtocol,
+        textureProtocol: Number(platform.textureProtocol ?? Protocol.HTTPS),
         sentryNeedAutoClear: platform.sentryNeedAutoClear ?? false,
         sentryAutoClearPeriod: platform.sentryAutoClearPeriod || '00:05:00',
+        unicoreUseExternalTokens: platform.unicoreUseExternalTokens ?? true,
       });
     }
   }, [platform, isLoading, form]);
@@ -65,6 +68,7 @@ export const EditSettingsPlatformForm: React.FC<{ showOnlyApiKeys?: boolean }> =
   const currentProtocol = typeof window !== 'undefined' ? extractProtocol(`${window.location.origin}/api/v1`) : undefined;
 
   const watchRegistration = form.watch('registrationIsEnabled');
+  const watchUnicoreTokens = form.watch('unicoreUseExternalTokens');
   const watchStorageType = form.watch('storageType');
   const isFormS3Storage = Number(watchStorageType) === StorageType.STORAGE_TYPE_S3;
 
@@ -82,7 +86,21 @@ export const EditSettingsPlatformForm: React.FC<{ showOnlyApiKeys?: boolean }> =
       textureProtocol: Number(body.textureProtocol),
       sentryNeedAutoClear: Boolean(body.sentryNeedAutoClear),
       sentryAutoClearPeriod: body.sentryAutoClearPeriod || '00:05:00',
+      unicoreUseExternalTokens: Boolean(body.unicoreUseExternalTokens),
     });
+  };
+
+  const onTestS3Connection = async () => {
+    const values = form.getValues();
+    try {
+      await testS3({
+        storageHost: values.storageHost ?? '',
+        storageLogin: values.storageLogin ?? '',
+        storagePassword: values.storagePassword ?? '',
+      });
+    } catch {
+      // ошибка уже показана в toast через onError хука
+    }
   };
 
   return (
@@ -110,6 +128,34 @@ export const EditSettingsPlatformForm: React.FC<{ showOnlyApiKeys?: boolean }> =
                       </div>
                       <p className="text-sm text-gray-700 dark:text-gray-300">
                         Позволяет регистрироваться новым пользователям на сайте
+                      </p>
+                    </div>
+                    <FormControl>
+                      {isLoading ? (
+                        <Skeleton className="w-12 h-6"/>
+                      ) : (
+                        <Switch checked={field.value} onCheckedChange={field.onChange}/>
+                      )}
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="unicoreUseExternalTokens"
+                render={({field}) => (
+                  <FormItem className="flex flex-row items-center justify-between w-full">
+                    <div className="space-y-0.5">
+                      <div className="flex flex-row items-center gap-x-1 mb-2">
+                        <UsersIcon className="mr-2 h-4 w-4"/>
+                        <h6 className="text-sm font-bold">
+                          Токены Unicore ({watchUnicoreTokens ? 'Вкл' : 'Выкл'})
+                        </h6>
+                      </div>
+                      <p className="text-sm text-gray-700 dark:text-gray-300">
+                        Включено — AccessToken игрока берётся из Unicore. Выключено — выдаётся JWT Gml,
+                        а наигранное время и кабинет по-прежнему читаются через сохранённый Unicore refresh
+                        (нужен хотя бы один вход через лаунчер после смены режима).
                       </p>
                     </div>
                     <FormControl>
@@ -283,6 +329,7 @@ export const EditSettingsPlatformForm: React.FC<{ showOnlyApiKeys?: boolean }> =
                           <Skeleton className="w-full h-10"/>
                         ) : (
                           <Select
+                            key={`storage-type-${field.value}`}
                             onValueChange={(value) => field.onChange(Number(value))}
                             value={String(field.value)}
                           >
@@ -314,7 +361,9 @@ export const EditSettingsPlatformForm: React.FC<{ showOnlyApiKeys?: boolean }> =
                     <div className="flex flex-col gap-y-1 min-w-96 mb-2 lg:mb-0">
                       <h6 className="text-sm font-bold">Хост хранилища S3</h6>
                       <p className="text-sm text-gray-700 dark:text-gray-300">
-                        Укажите хост-адрес вашего хранилища S3
+                        URL вида https://cdn.example.com или https://cdn.example.com/bucket.
+                        Файлы профилей сохраняются в бакеты <code>profiles</code> и{' '}
+                        <code>profile-backgrounds</code> (создаются при проверке соединения).
                       </p>
                     </div>
                     <div className="flex flex-col gap-y-1 min-w-96 mb-2 lg:mb-0">
@@ -392,8 +441,8 @@ export const EditSettingsPlatformForm: React.FC<{ showOnlyApiKeys?: boolean }> =
                                 <Skeleton className="w-full h-10"/>
                               ) : (
                                 <Input
-                                  type="text"
-                                  placeholder="Введите Secret Key хранилища"
+                                  type="password"
+                                  placeholder="Оставьте пустым, чтобы не менять"
                                   {...field}
                                 />
                               )}
@@ -407,6 +456,17 @@ export const EditSettingsPlatformForm: React.FC<{ showOnlyApiKeys?: boolean }> =
                         )}
                       />
                     </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={isLoading || isTestingS3 || isPending}
+                      onClick={onTestS3Connection}
+                    >
+                      {isTestingS3 && <Icons.spinner className="mr-2 h-4 w-4 animate-spin"/>}
+                      Проверить соединение
+                    </Button>
                   </div>
                 </div>
               )}

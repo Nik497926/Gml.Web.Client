@@ -75,6 +75,17 @@ export type ProfileJavaMetaEntity = {
   name?: string | null;
   version?: string | null;
   packageUuid?: string | null;
+  runtimes?: Record<
+    string,
+    {
+      runtimeId?: string | null;
+      javaPath?: string | null;
+      os?: string | null;
+      arch?: string | null;
+      name?: string | null;
+      version?: string | null;
+    }
+  >;
 };
 
 export type ProfileFolderBaseEntity = {

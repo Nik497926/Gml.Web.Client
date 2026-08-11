@@ -6,6 +6,8 @@ import {
   TGetSettingsPlatformResponse,
   TPutSettingsPlatformRequest,
   TPutSettingsPlatformResponse,
+  TTestSettingsS3Request,
+  TTestSettingsS3Response,
 } from '@/shared/api/contracts';
 
 class SettingsService {
@@ -22,6 +24,10 @@ class SettingsService {
     body: TPutSettingsPlatformRequest,
   ): Promise<AxiosResponse<TPutSettingsPlatformResponse>> {
     return await $api.put<TPutSettingsPlatformResponse>(this.BASE_URL_PLATFORM, body);
+  }
+
+  async testS3(body: TTestSettingsS3Request): Promise<AxiosResponse<TTestSettingsS3Response>> {
+    return await $api.post<TTestSettingsS3Response>(`${this.BASE_URL_PLATFORM}/s3/test`, body);
   }
 
   async getRestoreKeys(): Promise<AxiosResponse<{ data: string[] }>> {
