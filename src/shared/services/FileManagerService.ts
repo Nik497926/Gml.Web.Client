@@ -17,6 +17,12 @@ import {
   TPutFileManagerContentResponse,
 } from '@/shared/api/contracts/file-manager/schemas';
 
+export type FileManagerDownloadProgress = {
+  loaded: number;
+  total?: number;
+  percent?: number;
+};
+
 class FileManagerService {
   private BASE_URL = '/file-manager';
 
@@ -56,10 +62,22 @@ class FileManagerService {
     return await $api.post<TPostFileManagerExtractResponse>(`${this.BASE_URL}/extract`, body);
   }
 
-  async download(params: TGetFileManagerDownloadParams): Promise<void> {
+  async download(
+    params: TGetFileManagerDownloadParams,
+    onProgress?: (progress: FileManagerDownloadProgress) => void,
+  ): Promise<void> {
     const response = await $api.get(`${this.BASE_URL}/download`, {
       params,
       responseType: 'blob',
+      onDownloadProgress: (event) => {
+        const loaded = event.loaded ?? 0;
+        const total = event.total && event.total > 0 ? event.total : undefined;
+        onProgress?.({
+          loaded,
+          total,
+          percent: total ? Math.min(100, Math.round((loaded / total) * 100)) : undefined,
+        });
+      },
     });
 
     const disposition = response.headers['content-disposition'] as string | undefined;

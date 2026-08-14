@@ -8,6 +8,7 @@ import {
   FileIcon,
   FolderIcon,
   FolderOpenIcon,
+  Loader2Icon,
   PencilIcon,
   RefreshCwIcon,
   Trash2Icon,
@@ -51,17 +52,32 @@ import {
   AlertDialogTrigger,
 } from '@/shared/ui/alert-dialog';
 import { cn } from '@/shared/lib/utils';
+import { Progress } from '@/shared/ui/progress';
 
 type FileManagerProps = {
   scope: FileManagerScope;
   profileName?: string;
 };
 
-const formatSize = (size: number, isDirectory: boolean) => {
-  if (isDirectory) return '—';
+const formatBytes = (size: number) => {
   if (size < 1024) return `${size} B`;
   if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
-  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+  if (size < 1024 * 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(size / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+};
+
+const formatSize = (size: number, isDirectory: boolean) => {
+  if (isDirectory) return '—';
+  return formatBytes(size);
+};
+
+type TransferProgress = {
+  label: string;
+  fileIndex?: number;
+  fileCount?: number;
+  loaded: number;
+  total: number | null;
+  percent: number | null;
 };
 
 const formatDate = (value: string) => {
@@ -87,6 +103,8 @@ export function FileManager({ scope, profileName }: FileManagerProps) {
   const [editorContent, setEditorContent] = useState('');
   const [editorLoading, setEditorLoading] = useState(false);
   const [archiveName, setArchiveName] = useState('archive.zip');
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [transfer, setTransfer] = useState<TransferProgress | null>(null);
 
   const { data: entries = [], isFetching, refetch, isError, error } = useFileManagerEntries(
     scope,
@@ -198,16 +216,57 @@ export function FileManager({ scope, profileName }: FileManagerProps) {
       toast.error('Выберите файл для скачивания');
       return;
     }
+
+    const totalKnownSize = files.reduce((sum, file) => sum + (file.size > 0 ? file.size : 0), 0);
+    setIsDownloading(true);
+    setTransfer({
+      label: files[0].name,
+      fileIndex: 1,
+      fileCount: files.length,
+      loaded: 0,
+      total: totalKnownSize || null,
+      percent: totalKnownSize ? 0 : null,
+    });
+
     try {
-      for (const file of files) {
-        await fileManagerService.download({
-          scope,
-          path: file.relativePath,
-          profileName,
-        });
+      let completedBytes = 0;
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        await fileManagerService.download(
+          {
+            scope,
+            path: file.relativePath,
+            profileName,
+          },
+          (progress) => {
+            const loaded = completedBytes + progress.loaded;
+            const total =
+              totalKnownSize ||
+              (progress.total ? completedBytes + progress.total : null);
+            setTransfer({
+              label: file.name,
+              fileIndex: i + 1,
+              fileCount: files.length,
+              loaded,
+              total,
+              percent: total ? Math.min(100, Math.round((loaded / total) * 100)) : null,
+            });
+          },
+        );
+        completedBytes += file.size > 0 ? file.size : 0;
       }
+
+      toast.success('Скачивание завершено', {
+        description:
+          files.length === 1
+            ? files[0].name
+            : `Скачано файлов: ${files.length}`,
+      });
     } catch (err) {
       isAxiosError({ toast, error: err as Error });
+    } finally {
+      setIsDownloading(false);
+      setTransfer(null);
     }
   };
 
@@ -216,12 +275,23 @@ export function FileManager({ scope, profileName }: FileManagerProps) {
       toast.error('Выберите файлы или папки');
       return;
     }
-    archiveMutation.mutate({
-      scope,
-      profileName,
-      paths: selectedPaths,
-      archiveName: archiveName || 'archive.zip',
+    setTransfer({
+      label: `Создание архива ${archiveName || 'archive.zip'}`,
+      loaded: 0,
+      total: null,
+      percent: null,
     });
+    archiveMutation.mutate(
+      {
+        scope,
+        profileName,
+        paths: selectedPaths,
+        archiveName: archiveName || 'archive.zip',
+      },
+      {
+        onSettled: () => setTransfer(null),
+      },
+    );
   };
 
   const handleExtract = () => {
@@ -232,11 +302,22 @@ export function FileManager({ scope, profileName }: FileManagerProps) {
       toast.error('Выберите .zip архив');
       return;
     }
-    extractMutation.mutate({
-      scope,
-      profileName,
-      path: zip.relativePath,
+    setTransfer({
+      label: `Распаковка ${zip.name}`,
+      loaded: 0,
+      total: null,
+      percent: null,
     });
+    extractMutation.mutate(
+      {
+        scope,
+        profileName,
+        path: zip.relativePath,
+      },
+      {
+        onSettled: () => setTransfer(null),
+      },
+    );
   };
 
   const handleDelete = () => {
@@ -276,11 +357,21 @@ export function FileManager({ scope, profileName }: FileManagerProps) {
           type="button"
           variant="outline"
           size="sm"
-          disabled={selectedEntries.every((e) => e.isDirectory) || selectedPaths.length === 0}
+          disabled={
+            isDownloading ||
+            archiveMutation.isPending ||
+            extractMutation.isPending ||
+            selectedEntries.every((e) => e.isDirectory) ||
+            selectedPaths.length === 0
+          }
           onClick={handleDownload}
         >
-          <DownloadIcon className="mr-1 h-4 w-4" />
-          Скачать
+          {isDownloading ? (
+            <Loader2Icon className="mr-1 h-4 w-4 animate-spin" />
+          ) : (
+            <DownloadIcon className="mr-1 h-4 w-4" />
+          )}
+          {isDownloading ? 'Скачивание…' : 'Скачать'}
         </Button>
         <div className="flex items-center gap-2">
           <Input
@@ -293,11 +384,15 @@ export function FileManager({ scope, profileName }: FileManagerProps) {
             type="button"
             variant="outline"
             size="sm"
-            disabled={selectedPaths.length === 0 || archiveMutation.isPending}
+            disabled={selectedPaths.length === 0 || archiveMutation.isPending || isDownloading}
             onClick={handleArchive}
           >
-            <ArchiveIcon className="mr-1 h-4 w-4" />
-            В архив
+            {archiveMutation.isPending ? (
+              <Loader2Icon className="mr-1 h-4 w-4 animate-spin" />
+            ) : (
+              <ArchiveIcon className="mr-1 h-4 w-4" />
+            )}
+            {archiveMutation.isPending ? 'Архивация…' : 'В архив'}
           </Button>
         </div>
         <Button
@@ -306,12 +401,17 @@ export function FileManager({ scope, profileName }: FileManagerProps) {
           size="sm"
           disabled={
             !selectedEntries.some((e) => !e.isDirectory && e.name.toLowerCase().endsWith('.zip')) ||
-            extractMutation.isPending
+            extractMutation.isPending ||
+            isDownloading
           }
           onClick={handleExtract}
         >
-          <FolderOpenIcon className="mr-1 h-4 w-4" />
-          Распаковать
+          {extractMutation.isPending ? (
+            <Loader2Icon className="mr-1 h-4 w-4 animate-spin" />
+          ) : (
+            <FolderOpenIcon className="mr-1 h-4 w-4" />
+          )}
+          {extractMutation.isPending ? 'Распаковка…' : 'Распаковать'}
         </Button>
         <AlertDialog>
           <AlertDialogTrigger asChild>
@@ -354,6 +454,35 @@ export function FileManager({ scope, profileName }: FileManagerProps) {
           </span>
         ))}
       </div>
+
+      {transfer && (
+        <div className="rounded-md border bg-muted/30 px-3 py-3 space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+            <div className="flex min-w-0 items-center gap-2">
+              <Loader2Icon className="h-4 w-4 shrink-0 animate-spin" />
+              <span className="truncate font-medium">{transfer.label}</span>
+            </div>
+            <span className="text-xs text-muted-foreground shrink-0">
+              {transfer.fileCount && transfer.fileCount > 1
+                ? `${transfer.fileIndex}/${transfer.fileCount} · `
+                : ''}
+              {transfer.percent != null ? `${transfer.percent}%` : 'идёт обработка…'}
+              {transfer.total != null && transfer.total > 0
+                ? ` · ${formatBytes(transfer.loaded)} / ${formatBytes(transfer.total)}`
+                : transfer.loaded > 0
+                  ? ` · ${formatBytes(transfer.loaded)}`
+                  : ''}
+            </span>
+          </div>
+          {transfer.percent != null ? (
+            <Progress value={transfer.percent} className="h-2" />
+          ) : (
+            <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
+              <div className="h-full w-full animate-pulse bg-primary/80" />
+            </div>
+          )}
+        </div>
+      )}
 
       {isError && (
         <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
