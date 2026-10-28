@@ -37,7 +37,8 @@ export function GenerateLauncherDialog() {
         <DialogHeader className="mb-4">
           <DialogTitle className="text-2xl font-bold">Сборка лаунчера</DialogTitle>
           <DialogDescription className="text-muted-foreground mt-1">
-            Настройте параметры для скачивания, сборки или обновления лаунчера
+            Скачивание, сборка или обновление лаунчера. Свой дизайн (тема) задаётся папкой{' '}
+            <code className="text-xs">LauncherBrand</code> на сервере — игрок тему не выбирает.
           </DialogDescription>
         </DialogHeader>
         <Tabs defaultValue="download" className="h-[620px] sm:flex sm:gap-6">
@@ -57,7 +58,8 @@ export function GenerateLauncherDialog() {
               <div className="space-y-2">
                 <h3 className="text-lg font-medium">Скачивание исходного кода</h3>
                 <p className="text-sm text-muted-foreground">
-                  Загрузите исходный код лаунчера с GitHub для дальнейшей работы с ним
+                  Загрузите исходный код с GitHub. Если на сервере есть{' '}
+                  <code className="text-xs">LauncherBrand</code>, шаблон подставится автоматически.
                 </p>
               </div>
               <div className="border rounded-lg p-4">
@@ -71,7 +73,8 @@ export function GenerateLauncherDialog() {
               <div className="space-y-2">
                 <h3 className="text-lg font-medium">Сборка лаунчера</h3>
                 <p className="text-sm text-muted-foreground">
-                  Соберите лаунчер для выбранных операционных систем из исходного кода
+                  Сборка для выбранных ОС. Перед compile снова применяется{' '}
+                  <code className="text-xs">LauncherBrand</code> (если есть).
                 </p>
               </div>
               <div className="border rounded-lg p-4">

@@ -80,3 +80,15 @@ export type TGetFileManagerDownloadParams = {
   path: string;
   profileName?: string;
 };
+
+export type TPostFileManagerUploadParams = {
+  scope: FileManagerScope;
+  path?: string;
+  profileName?: string;
+  overwrite?: boolean;
+  files: File[];
+};
+
+export type TPostFileManagerUploadResponse = ResponseBaseEntity & {
+  data: Array<{ relativePath: string; name: string; size: number }>;
+};

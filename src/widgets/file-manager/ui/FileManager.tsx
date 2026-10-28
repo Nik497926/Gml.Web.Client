@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   ArchiveIcon,
   ArrowUpIcon,
@@ -12,6 +12,7 @@ import {
   PencilIcon,
   RefreshCwIcon,
   Trash2Icon,
+  UploadIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { isAxiosError as isAxiosErrorBase } from 'axios';
@@ -104,7 +105,10 @@ export function FileManager({ scope, profileName }: FileManagerProps) {
   const [editorLoading, setEditorLoading] = useState(false);
   const [archiveName, setArchiveName] = useState('archive.zip');
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [transfer, setTransfer] = useState<TransferProgress | null>(null);
+  const uploadInputRef = useRef<HTMLInputElement>(null);
+  const isBusy = isDownloading || isUploading || archiveMutation.isPending || extractMutation.isPending;
 
   const { data: entries = [], isFetching, refetch, isError, error } = useFileManagerEntries(
     scope,
@@ -208,6 +212,61 @@ export function FileManager({ scope, profileName }: FileManagerProps) {
         onSuccess: () => setEditorOpen(false),
       },
     );
+  };
+
+  const handleUploadClick = () => {
+    uploadInputRef.current?.click();
+  };
+
+  const handleUploadFiles = async (fileList: FileList | null) => {
+    if (!fileList || fileList.length === 0) return;
+    const files = Array.from(fileList);
+    const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+
+    setIsUploading(true);
+    setTransfer({
+      label: files.length === 1 ? files[0].name : `Загрузка файлов (${files.length})`,
+      fileIndex: 1,
+      fileCount: files.length,
+      loaded: 0,
+      total: totalSize || null,
+      percent: totalSize ? 0 : null,
+    });
+
+    try {
+      await fileManagerService.upload(
+        {
+          scope,
+          path: currentPath || undefined,
+          profileName,
+          overwrite: true,
+          files,
+        },
+        (progress) => {
+          setTransfer({
+            label: files.length === 1 ? files[0].name : `Загрузка файлов (${files.length})`,
+            fileIndex: 1,
+            fileCount: files.length,
+            loaded: progress.loaded,
+            total: progress.total ?? totalSize ?? null,
+            percent:
+              progress.percent ??
+              (totalSize ? Math.min(100, Math.round((progress.loaded / totalSize) * 100)) : null),
+          });
+        },
+      );
+      toast.success('Загрузка завершена', {
+        description: files.length === 1 ? files[0].name : `Загружено файлов: ${files.length}`,
+      });
+      setSelected({});
+      await refetch();
+    } catch (err) {
+      isAxiosError({ toast, error: err as Error });
+    } finally {
+      setIsUploading(false);
+      setTransfer(null);
+      if (uploadInputRef.current) uploadInputRef.current.value = '';
+    }
   };
 
   const handleDownload = async () => {
@@ -349,18 +408,37 @@ export function FileManager({ scope, profileName }: FileManagerProps) {
           <ArrowUpIcon className="mr-1 h-4 w-4" />
           Вверх
         </Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => refetch()}>
+        <Button type="button" variant="outline" size="sm" onClick={() => refetch()} disabled={isBusy}>
           <RefreshCwIcon className={cn('mr-1 h-4 w-4', isFetching && 'animate-spin')} />
           Обновить
+        </Button>
+        <input
+          ref={uploadInputRef}
+          type="file"
+          multiple
+          className="hidden"
+          onChange={(e) => void handleUploadFiles(e.target.files)}
+        />
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={isBusy}
+          onClick={handleUploadClick}
+        >
+          {isUploading ? (
+            <Loader2Icon className="mr-1 h-4 w-4 animate-spin" />
+          ) : (
+            <UploadIcon className="mr-1 h-4 w-4" />
+          )}
+          {isUploading ? 'Загрузка…' : 'Загрузить'}
         </Button>
         <Button
           type="button"
           variant="outline"
           size="sm"
           disabled={
-            isDownloading ||
-            archiveMutation.isPending ||
-            extractMutation.isPending ||
+            isBusy ||
             selectedEntries.every((e) => e.isDirectory) ||
             selectedPaths.length === 0
           }
@@ -384,7 +462,7 @@ export function FileManager({ scope, profileName }: FileManagerProps) {
             type="button"
             variant="outline"
             size="sm"
-            disabled={selectedPaths.length === 0 || archiveMutation.isPending || isDownloading}
+            disabled={selectedPaths.length === 0 || isBusy}
             onClick={handleArchive}
           >
             {archiveMutation.isPending ? (
@@ -401,8 +479,7 @@ export function FileManager({ scope, profileName }: FileManagerProps) {
           size="sm"
           disabled={
             !selectedEntries.some((e) => !e.isDirectory && e.name.toLowerCase().endsWith('.zip')) ||
-            extractMutation.isPending ||
-            isDownloading
+            isBusy
           }
           onClick={handleExtract}
         >

@@ -13,6 +13,8 @@ import {
   TPostFileManagerDeleteResponse,
   TPostFileManagerExtractRequest,
   TPostFileManagerExtractResponse,
+  TPostFileManagerUploadParams,
+  TPostFileManagerUploadResponse,
   TPutFileManagerContentRequest,
   TPutFileManagerContentResponse,
 } from '@/shared/api/contracts/file-manager/schemas';
@@ -60,6 +62,34 @@ class FileManagerService {
     body: TPostFileManagerExtractRequest,
   ): Promise<AxiosResponse<TPostFileManagerExtractResponse>> {
     return await $api.post<TPostFileManagerExtractResponse>(`${this.BASE_URL}/extract`, body);
+  }
+
+  async upload(
+    params: TPostFileManagerUploadParams,
+    onProgress?: (progress: FileManagerDownloadProgress) => void,
+  ): Promise<AxiosResponse<TPostFileManagerUploadResponse>> {
+    const form = new FormData();
+    for (const file of params.files) {
+      form.append('files', file, file.name);
+    }
+
+    return await $api.post<TPostFileManagerUploadResponse>(`${this.BASE_URL}/upload`, form, {
+      params: {
+        scope: params.scope,
+        path: params.path || undefined,
+        profileName: params.profileName,
+        overwrite: params.overwrite ?? true,
+      },
+      onUploadProgress: (event) => {
+        const loaded = event.loaded ?? 0;
+        const total = event.total && event.total > 0 ? event.total : undefined;
+        onProgress?.({
+          loaded,
+          total,
+          percent: total ? Math.min(100, Math.round((loaded / total) * 100)) : undefined,
+        });
+      },
+    });
   }
 
   async download(

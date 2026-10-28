@@ -14,4 +14,5 @@ export type SettingsPlatformBaseEntity = {
   sentryAutoClearPeriod: string;
   /** true — токен игрока из Unicore; false — JWT Gml */
   unicoreUseExternalTokens: boolean;
+  unicoreHasApiKey?: boolean;
 };

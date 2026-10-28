@@ -40,7 +40,7 @@ export const useEditUnicoreTokens = () => {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['settings-platform'] });
       toast.success('Успешно', {
-        description: 'Режим токенов Unicore обновлён',
+        description: 'Настройки Unicore обновлены',
       });
     },
     onError: (error) => {

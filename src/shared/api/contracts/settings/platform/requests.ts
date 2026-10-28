@@ -28,9 +28,11 @@ export type TPutSettingsPlatformResponse = ResponseBaseEntity & {};
 
 export type TPutUnicoreTokensRequest = {
   useExternalTokens: boolean;
+  /** null/undefined — не менять; '' — очистить; иначе сохранить */
+  apiKey?: string | null;
 };
 export type TPutUnicoreTokensResponse = ResponseBaseEntity & {
-  data: { useExternalTokens: boolean };
+  data: { useExternalTokens: boolean; hasApiKey: boolean };
 };
 
 export type TTestSettingsS3Request = {

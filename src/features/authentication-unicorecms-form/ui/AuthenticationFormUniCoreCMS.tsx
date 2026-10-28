@@ -35,10 +35,16 @@ export function AuthenticationFormUniCoreCMS({
   const { mutateAsync: saveUnicoreTokens, isPending: isSavingTokens } = useEditUnicoreTokens();
 
   const [useExternalTokens, setUseExternalTokens] = React.useState(true);
+  const [apiKey, setApiKey] = React.useState('');
+  const [apiKeyDirty, setApiKeyDirty] = React.useState(false);
+  const [clearApiKey, setClearApiKey] = React.useState(false);
 
   React.useEffect(() => {
     if (platform) {
       setUseExternalTokens(platform.unicoreUseExternalTokens ?? true);
+      setApiKey('');
+      setApiKeyDirty(false);
+      setClearApiKey(false);
     }
   }, [platform]);
 
@@ -56,13 +62,22 @@ export function AuthenticationFormUniCoreCMS({
     resolver: zodResolver(integrationSchema),
   });
 
-  const tokensDirty = (platform?.unicoreUseExternalTokens ?? true) !== useExternalTokens;
+  const tokensDirty =
+    (platform?.unicoreUseExternalTokens ?? true) !== useExternalTokens ||
+    apiKeyDirty ||
+    clearApiKey;
 
   const onSubmit: SubmitHandler<IntegrationFormSchemaType> = async (
     data: IntegrationFormSchemaType,
   ) => {
     if (tokensDirty) {
-      await saveUnicoreTokens({ useExternalTokens });
+      await saveUnicoreTokens({
+        useExternalTokens,
+        apiKey: clearApiKey ? '' : apiKeyDirty ? apiKey.trim() : undefined,
+      });
+      setApiKey('');
+      setApiKeyDirty(false);
+      setClearApiKey(false);
     }
 
     await mutateAsync(data).then(() => {
@@ -98,6 +113,54 @@ export function AuthenticationFormUniCoreCMS({
             <FormControl>
               <Switch checked={useExternalTokens} onCheckedChange={setUseExternalTokens} />
             </FormControl>
+          </FormItem>
+
+          <FormItem className="space-y-2 rounded-lg border p-3">
+            <FormLabel className="text-sm font-medium">
+              API-ключ UnicoreCMS
+              {platform?.unicoreHasApiKey ? ' (сохранён)' : ''}
+            </FormLabel>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Для админской проверки кабинета игрока без его входа. В Unicore создайте ключ с правами
+              <code className="mx-1 text-[11px]">admin.dashboard</code>+
+              <code className="mx-1 text-[11px]">admin.users.read</code> и IP allowlist на Gml Backend.
+              Заголовок: <code className="text-[11px]">Authorization: Api-Key …</code>
+            </p>
+            <FormControl>
+              <Input
+                type="password"
+                autoComplete="off"
+                placeholder={
+                  platform?.unicoreHasApiKey
+                    ? 'Оставьте пустым, чтобы не менять'
+                    : 'Вставьте API-ключ из Unicore'
+                }
+                value={apiKey}
+                onChange={(e) => {
+                  setApiKey(e.target.value);
+                  setApiKeyDirty(e.target.value.trim().length > 0);
+                  setClearApiKey(false);
+                }}
+              />
+            </FormControl>
+            {platform?.unicoreHasApiKey && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-fit"
+                onClick={() => {
+                  setClearApiKey(true);
+                  setApiKey('');
+                  setApiKeyDirty(false);
+                }}
+              >
+                Удалить сохранённый ключ
+              </Button>
+            )}
+            {clearApiKey && (
+              <p className="text-xs text-amber-600">Ключ будет удалён при сохранении</p>
+            )}
           </FormItem>
 
           <Button
