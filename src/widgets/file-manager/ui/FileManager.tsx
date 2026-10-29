@@ -108,7 +108,6 @@ export function FileManager({ scope, profileName }: FileManagerProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [transfer, setTransfer] = useState<TransferProgress | null>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
-  const isBusy = isDownloading || isUploading || archiveMutation.isPending || extractMutation.isPending;
 
   const { data: entries = [], isFetching, refetch, isError, error } = useFileManagerEntries(
     scope,
@@ -120,6 +119,8 @@ export function FileManager({ scope, profileName }: FileManagerProps) {
   const deleteMutation = useDeleteFileManagerEntries();
   const archiveMutation = useArchiveFileManagerEntries();
   const extractMutation = useExtractFileManagerArchive();
+  const isBusy =
+    isDownloading || isUploading || archiveMutation.isPending || extractMutation.isPending;
 
   const selectedPaths = useMemo(
     () => Object.entries(selected).filter(([, v]) => v).map(([path]) => path),
