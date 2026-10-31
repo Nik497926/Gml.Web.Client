@@ -63,7 +63,15 @@ export async function middleware(request: NextRequest) {
 
     // No refresh possible → clean and redirect to sign-in
     const redirect = NextResponse.redirect(new URL(AUTH_PAGES.SIGN_IN, request.nextUrl));
-    redirect.cookies.delete('accessToken');
+    redirect.cookies.delete('accessToken', { path: '/' });
+    // refreshToken HttpOnly — сбрасываем с теми же флагами, что пишет API
+    redirect.cookies.set('refreshToken', '', {
+      path: '/',
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      maxAge: 0,
+    });
     return redirect;
   }
 
@@ -74,6 +82,20 @@ export async function middleware(request: NextRequest) {
       const redirect = NextResponse.redirect(new URL(DASHBOARD_PAGES.HOME, request.nextUrl));
       redirect.cookies.set('accessToken', newToken, { path: '/', sameSite: 'lax' });
       return redirect;
+    }
+
+    // Refresh не удался — не оставляем мёртвый refreshToken мешать новому логину
+    if (hasRefresh) {
+      const response = NextResponse.next();
+      response.cookies.delete('accessToken', { path: '/' });
+      response.cookies.set('refreshToken', '', {
+        path: '/',
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none',
+        maxAge: 0,
+      });
+      return response;
     }
   }
 

@@ -7,6 +7,7 @@ import {
   TPostSignUpResponse,
 } from '@/shared/api/contracts';
 import {
+  removeStorageProfile,
   removeStorageRecloudIDAccessToken,
   removeStorageTokens,
   setStorageAccessToken,
@@ -68,8 +69,10 @@ class AuthService {
     try {
       await $api.post(`${this.BASE_URL}/logout`, {});
     } catch (_) {
+      // Даже если API недоступен — локальную сессию всё равно сбрасываем
     } finally {
       removeStorageTokens();
+      removeStorageProfile();
       removeStorageRecloudIDAccessToken();
     }
   }

@@ -2,6 +2,11 @@ import Cookies from 'js-cookie';
 
 import { ApiUserBaseEntity, UserBaseEntity } from '@/shared/api/contracts';
 
+const COOKIE_OPTS: Cookies.CookieAttributes = {
+  path: '/',
+  sameSite: 'lax',
+};
+
 export const getStorageProfile = () => {
   const profile = Cookies.get('profile');
 
@@ -21,34 +26,32 @@ export const setStorageProfile = (apiProfile: ApiUserBaseEntity) => {
   };
 
   Cookies.set('profile', JSON.stringify(profile), {
-    path: '/',
-    sameSite: 'lax',
+    ...COOKIE_OPTS,
     expires: 1,
   });
 };
 
-export const removeStorageProfile = () => Cookies.remove('profile');
+export const removeStorageProfile = () => Cookies.remove('profile', COOKIE_OPTS);
 
 export const getStorageAccessToken = () => Cookies.get('accessToken') || null;
 
 export const setStorageAccessToken = (token: string) => {
   Cookies.set('accessToken', token, {
-    path: '/',
-    sameSite: 'lax',
+    ...COOKIE_OPTS,
     expires: 1,
   });
 };
 
-export const removeStorageTokens = () => Cookies.remove('accessToken');
+export const removeStorageTokens = () => Cookies.remove('accessToken', COOKIE_OPTS);
 
 // RecloudID specific token storage
 export const getStorageRecloudIDAccessToken = () => Cookies.get('recloudIDAccessToken') || null;
 export const setStorageRecloudIDAccessToken = (token: string) => {
   Cookies.set('recloudIDAccessToken', token, {
-    path: '/',
-    sameSite: 'lax',
+    ...COOKIE_OPTS,
     expires: 1,
   });
 };
 
-export const removeStorageRecloudIDAccessToken = () => Cookies.remove('recloudIDAccessToken');
+export const removeStorageRecloudIDAccessToken = () =>
+  Cookies.remove('recloudIDAccessToken', COOKIE_OPTS);

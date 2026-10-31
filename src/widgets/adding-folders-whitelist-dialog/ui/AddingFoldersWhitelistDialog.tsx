@@ -53,9 +53,12 @@ export const AddingFoldersWhitelistDialog = ({
   );
 
   const availableFolders = useMemo(() => {
-    const fromFiles = deriveFoldersFromFiles((profile.files ?? []).map((f) => f.directory));
+    const fromFiles = deriveFoldersFromFiles(
+      (profile.files ?? []).map((f) => f.directory),
+      profileName,
+    );
     return fromFiles.filter((f) => !existingWhitelist.has(f));
-  }, [profile.files, existingWhitelist]);
+  }, [profile.files, profileName, existingWhitelist]);
 
   const filteredFolders = useMemo(() => {
     const q = filter.trim().toLowerCase();
@@ -177,14 +180,14 @@ export const AddingFoldersWhitelistDialog = ({
                     <CardTitle className="text-lg">Свой путь к папке</CardTitle>
                     <CardDescription>
                       Относительно каталога установки лаунчера, например{' '}
-                      <code className="text-xs">game data/beta/xaero</code> или относительно профиля{' '}
-                      <code className="text-xs">xaero</code>
+                      <code className="text-xs">game data/{profileName}/xaero</code> или коротко{' '}
+                      <code className="text-xs">xaero</code> (внутри текущего профиля)
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="flex gap-3">
                       <Input
-                        placeholder="game data/beta/config"
+                        placeholder={`game data/${profileName}/config`}
                         value={customFolder}
                         onChange={(e) => setCustomFolder(e.target.value)}
                         onKeyDown={(e) => {
