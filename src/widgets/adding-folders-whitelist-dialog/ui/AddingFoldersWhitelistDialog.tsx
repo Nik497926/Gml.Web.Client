@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+'use client';
+
+import React, { useMemo, useState } from 'react';
 import { ExclamationTriangleIcon, PlusIcon } from '@radix-ui/react-icons';
-import { Trash2Icon } from 'lucide-react';
+import { Folder, Trash2Icon } from 'lucide-react';
 
 import {
   Dialog,
@@ -10,17 +12,27 @@ import {
   DialogTrigger,
 } from '@/shared/ui/dialog';
 import { Button } from '@/shared/ui/button';
-import { Tabs, TabsContent } from '@/shared/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert';
 import { Input } from '@/shared/ui/input';
 import { useAddingFolderWhitelist } from '@/shared/hooks';
+import { ProfileExtendedBaseEntity } from '@/shared/api/contracts';
+import {
+  deriveFoldersFromFiles,
+  normalizeWhitelistPath,
+} from '@/shared/lib/normalizeWhitelistPath';
+import { ScrollArea } from '@/shared/ui/scroll-area';
+import { Checkbox } from '@/shared/ui/checkbox';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card';
 
 interface AddingFoldersWhitelistDialogProps {
   profileName: string;
+  profile: ProfileExtendedBaseEntity;
 }
 
 export const AddingFoldersWhitelistDialog = ({
   profileName,
+  profile,
 }: AddingFoldersWhitelistDialogProps) => {
   const { mutate } = useAddingFolderWhitelist();
 
@@ -30,39 +42,87 @@ export const AddingFoldersWhitelistDialog = ({
   const [tab, setTab] = useState('folders');
   const onChangeTab = (currentTab: string) => () => setTab(currentTab);
 
-  const [folder, setFolder] = useState<string>('');
-  const [folders, setFolders] = useState<string[]>([]);
+  const [customFolder, setCustomFolder] = useState('');
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const [customAdded, setCustomAdded] = useState<string[]>([]);
+  const [filter, setFilter] = useState('');
 
-  const handleAppendFolder = (folder: string) => {
-    setFolders((prev) => Array.from(new Set([...prev, folder])));
+  const existingWhitelist = useMemo(
+    () => new Set((profile.whiteListFolders ?? []).map((f) => normalizeWhitelistPath(f.path))),
+    [profile.whiteListFolders],
+  );
+
+  const availableFolders = useMemo(() => {
+    const fromFiles = deriveFoldersFromFiles((profile.files ?? []).map((f) => f.directory));
+    return fromFiles.filter((f) => !existingWhitelist.has(f));
+  }, [profile.files, existingWhitelist]);
+
+  const filteredFolders = useMemo(() => {
+    const q = filter.trim().toLowerCase();
+    if (!q) return availableFolders;
+    return availableFolders.filter((f) => f.toLowerCase().includes(q));
+  }, [availableFolders, filter]);
+
+  const selectedPaths = useMemo(() => {
+    const fromList = Object.entries(selected)
+      .filter(([, v]) => v)
+      .map(([path]) => normalizeWhitelistPath(path));
+    return Array.from(new Set([...fromList, ...customAdded.map(normalizeWhitelistPath)])).filter(
+      Boolean,
+    );
+  }, [selected, customAdded]);
+
+  const handleAppendCustom = () => {
+    const path = normalizeWhitelistPath(customFolder);
+    if (!path) return;
+    if (existingWhitelist.has(path)) return;
+    setCustomAdded((prev) => (prev.includes(path) ? prev : [...prev, path]));
+    setCustomFolder('');
   };
 
-  const handleChangeFolder = (folder: string) => {
-    setFolder(folder);
+  const toggleFolder = (path: string, checked: boolean) => {
+    setSelected((prev) => ({ ...prev, [path]: checked }));
   };
 
-  const handleDeleteFolder = (folder: string) => {
-    setFolders((prev) => prev.filter((f) => f !== folder));
+  const removeCustom = (path: string) => {
+    setCustomAdded((prev) => prev.filter((p) => p !== path));
+    setSelected((prev) => {
+      const next = { ...prev };
+      delete next[path];
+      return next;
+    });
+  };
+
+  const resetState = () => {
+    setSelected({});
+    setCustomAdded([]);
+    setCustomFolder('');
+    setFilter('');
+    setTab('folders');
   };
 
   const onSubmit = () => {
-    const folderPaths = folders.map((folder) => ({
-      profileName,
-      directory: folder,
-      path: folder,
-    }));
+    if (selectedPaths.length === 0) return;
 
-    mutate(folderPaths);
+    mutate(
+      selectedPaths.map((path) => ({
+        profileName,
+        path,
+      })),
+    );
 
-    setFolders([]);
-    setFolder('');
-    setTab('folders');
-
+    resetState();
     onOpenChange();
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) resetState();
+        onOpenChange();
+      }}
+    >
       <DialogTrigger asChild>
         <Button className="w-fit gap-2">
           <PlusIcon width={16} height={16} />
@@ -74,53 +134,125 @@ export const AddingFoldersWhitelistDialog = ({
           <DialogTitle>Добавление папок в «Белый список»</DialogTitle>
         </DialogHeader>
         <Tabs defaultValue="folders" value={tab}>
-          <TabsContent value="folders" className="grid gap-y-2">
-            <div className="flex gap-x-4">
-              <Input
-                placeholder="Введите путь до папки"
-                onChange={(event) => handleChangeFolder(event.target.value)}
-              />
-              <Button onClick={() => handleAppendFolder(folder)} disabled={folder == ''}>
-                Добавить
-              </Button>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Будет исключена: C:/Users/test/AppData/Roaming/
-              {'{НазваниеВашегоЛаунчера}'}/{folder}
-            </p>
-            <ul className="max-h-[200px] overflow-y-scroll">
-              {folders.map((folder) => (
-                <li key={folder} className="flex gap-x-2 py-2 px-2 items-center">
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    className="py-2 px-2 mr-2 w-7 h-7"
-                    onClick={() => handleDeleteFolder(folder)}
-                  >
-                    <Trash2Icon size={16} />
-                  </Button>
+          <TabsContent value="folders" className="space-y-4">
+            <Tabs defaultValue="from-list">
+              <TabsList>
+                <TabsTrigger value="from-list">Из загруженных</TabsTrigger>
+                <TabsTrigger value="custom">Свой путь</TabsTrigger>
+              </TabsList>
 
-                  <span>{folder}</span>
-                </li>
-              ))}
-              {folders.length == 0 && (
-                <li className="flex gap-x-2 py-12 px-2 justify-center">
-                  <p className="text-sm text-muted-foreground">
-                    Список пуст. Добавьте хотя бы одну папку.
-                  </p>
-                </li>
-              )}
-            </ul>
+              <TabsContent value="from-list" className="space-y-3">
+                <Input
+                  placeholder="Поиск по папкам..."
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value)}
+                />
+                <ScrollArea className="h-72 rounded-md border">
+                  <div className="p-2 space-y-1">
+                    {filteredFolders.length === 0 && (
+                      <p className="text-sm text-muted-foreground p-4 text-center">
+                        Нет доступных папок. Сначала загрузите клиент или укажите путь вручную.
+                      </p>
+                    )}
+                    {filteredFolders.map((folder) => (
+                      <label
+                        key={folder}
+                        className="flex items-center gap-3 rounded-md px-2 py-2 hover:bg-muted cursor-pointer"
+                      >
+                        <Checkbox
+                          checked={!!selected[folder]}
+                          onCheckedChange={(v) => toggleFolder(folder, v === true)}
+                        />
+                        <Folder className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <span className="text-sm break-all">{folder}</span>
+                      </label>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+
+              <TabsContent value="custom">
+                <Card className="shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg">Свой путь к папке</CardTitle>
+                    <CardDescription>
+                      Относительно каталога установки лаунчера, например{' '}
+                      <code className="text-xs">game data/beta/xaero</code> или относительно профиля{' '}
+                      <code className="text-xs">xaero</code>
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex gap-3">
+                      <Input
+                        placeholder="game data/beta/config"
+                        value={customFolder}
+                        onChange={(e) => setCustomFolder(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAppendCustom();
+                          }
+                        }}
+                      />
+                      <Button onClick={handleAppendCustom} disabled={!customFolder.trim()}>
+                        Добавить
+                      </Button>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Будет исключена папка:{' '}
+                      <span className="font-medium text-foreground break-all">
+                        {'{каталог лаунчера}/'}
+                        {normalizeWhitelistPath(customFolder) || '…'}
+                      </span>
+                    </p>
+                    {customAdded.length > 0 && (
+                      <ul className="space-y-1">
+                        {customAdded.map((folder) => (
+                          <li
+                            key={folder}
+                            className="flex items-center gap-2 rounded-md border px-2 py-1.5"
+                          >
+                            <Button
+                              variant="destructive"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => removeCustom(folder)}
+                            >
+                              <Trash2Icon size={14} />
+                            </Button>
+                            <span className="text-sm break-all">{folder}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+
+            <div className="p-3 bg-muted/50 rounded-md border text-sm">
+              Выбрано папок: <strong>{selectedPaths.length}</strong>
+            </div>
           </TabsContent>
+
           <TabsContent value="checkout">
             <Alert variant="destructive">
               <ExclamationTriangleIcon className="h-4 w-4" />
               <AlertTitle>Внимание!</AlertTitle>
               <AlertDescription>
-                Вы выбрали <strong>{folders.length}</strong> папок, которые будут добавлены в
-                WhiteList
+                Вы выбрали <strong>{selectedPaths.length}</strong> папок(и), которые будут добавлены
+                в WhiteList
               </AlertDescription>
             </Alert>
+            <ScrollArea className="h-64 mt-4 rounded-md border">
+              <ul className="p-3 space-y-1">
+                {selectedPaths.map((path) => (
+                  <li key={path} className="text-sm break-all py-1 border-b last:border-0">
+                    {path}
+                  </li>
+                ))}
+              </ul>
+            </ScrollArea>
           </TabsContent>
         </Tabs>
         <div className="flex justify-end gap-x-4">
@@ -131,7 +263,7 @@ export const AddingFoldersWhitelistDialog = ({
             <Button
               className="w-fit"
               onClick={onChangeTab('checkout')}
-              disabled={folders.length == 0}
+              disabled={selectedPaths.length === 0}
             >
               Далее
             </Button>

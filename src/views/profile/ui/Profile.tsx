@@ -246,7 +246,10 @@ export const ProfilePage = ({ params }: { params: { name: string } }) => {
           >
             <div className="hidden md:flex flex-col gap-3">
               <div className={classes.tabs__whitelist}>
-                <AddingFoldersWhitelistDialog profileName={profile.profileName} />
+                <AddingFoldersWhitelistDialog
+                  profileName={profile.profileName}
+                  profile={profile}
+                />
                 {!!Object.keys(rowSelection).length && (
                   <AlertDialog>
                     <AlertDialogTrigger asChild>

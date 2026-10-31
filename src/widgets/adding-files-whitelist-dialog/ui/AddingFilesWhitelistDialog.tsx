@@ -24,6 +24,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert';
 import { ScrollArea } from '@/shared/ui/scroll-area';
 import { Separator } from '@/shared/ui/separator';
 import { useFilesListStore } from '@/widgets/adding-files-whitelist-dialog/lib/store';
+import { normalizeWhitelistPath } from '@/shared/lib/normalizeWhitelistPath';
 
 interface AddingFilesWhitelistDialogProps {
   profileName: string;
@@ -56,14 +57,19 @@ export function AddingFilesWhitelistDialog({
         .filter(([_, selected]) => selected)
         .map(([directory]) => ({
           profileName,
-          directory,
+          directory: normalizeWhitelistPath(directory),
         }));
       setDirectories(selectedFiles);
     },
   };
 
   const onSubmit = () => {
-    mutate(directories);
+    mutate(
+      directories.map((item) => ({
+        ...item,
+        directory: normalizeWhitelistPath(item.directory),
+      })),
+    );
 
     onOpenChange();
     clear();

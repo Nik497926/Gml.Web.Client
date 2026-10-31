@@ -9,6 +9,7 @@ import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import { useFilesListStore } from '@/widgets/adding-files-whitelist-dialog/lib/store';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card';
+import { normalizeWhitelistPath } from '@/shared/lib/normalizeWhitelistPath';
 
 export function AddingAnyFilesForm({ profile }: { profile: string }) {
   const { addDirectory } = useFilesListStore();
@@ -23,7 +24,7 @@ export function AddingAnyFilesForm({ profile }: { profile: string }) {
 
     const directory = {
       profileName: profile,
-      directory: value,
+      directory: normalizeWhitelistPath(value),
     };
 
     addDirectory(directory);
@@ -35,12 +36,13 @@ export function AddingAnyFilesForm({ profile }: { profile: string }) {
       <CardHeader className="pb-3">
         <CardTitle className="text-xl">Добавление своего файла в белый список</CardTitle>
         <CardDescription>
-          Укажите путь к файлу, который вы хотите добавить в белый список
+          Укажите путь относительно каталога установки лаунчера, например{' '}
+          <code className="text-xs">game data/beta/options.txt</code>
         </CardDescription>
       </CardHeader>
       <CardContent>
         <FormItem className="space-y-2">
-          <FormLabel className="text-sm font-medium">Наименование файла</FormLabel>
+          <FormLabel className="text-sm font-medium">Путь к файлу</FormLabel>
           <div className="flex items-center gap-3">
             <div className="relative flex-1">
               <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
@@ -48,7 +50,7 @@ export function AddingAnyFilesForm({ profile }: { profile: string }) {
               </div>
               <FormControl>
                 <Input
-                  placeholder="Введите абсолютный путь"
+                  placeholder="game data/beta/options.txt"
                   value={value || ''}
                   onChange={(event) => onChangeValue(event.target.value)}
                   className="pl-9 focus-visible:ring-2 focus-visible:ring-primary/20"
@@ -67,7 +69,9 @@ export function AddingAnyFilesForm({ profile }: { profile: string }) {
           <FormDescription className="mt-3 p-3 bg-muted/50 rounded-md border text-sm">
             Будет исключен файл:{' '}
             <span className="font-medium text-primary block mt-1 break-all">
-              {value ? `C:/Users/test/AppData/Roaming/{НазваниеВашегоЛаунчера}/${value}` : '—'}
+              {value
+                ? `{каталог лаунчера}/${normalizeWhitelistPath(value)}`
+                : '—'}
             </span>
           </FormDescription>
         </FormItem>
