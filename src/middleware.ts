@@ -40,6 +40,20 @@ function safeIsExpired(token?: string | null): boolean {
   }
 }
 
+/** Next.js 15: delete(name) | delete({ name, path, ... }) — не delete(name, options). */
+function clearAuthCookies(response: NextResponse) {
+  response.cookies.delete({ name: 'accessToken', path: '/' });
+  response.cookies.set({
+    name: 'refreshToken',
+    value: '',
+    path: '/',
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none',
+    maxAge: 0,
+  });
+}
+
 export async function middleware(request: NextRequest) {
   const {
     cookies,
@@ -63,15 +77,7 @@ export async function middleware(request: NextRequest) {
 
     // No refresh possible → clean and redirect to sign-in
     const redirect = NextResponse.redirect(new URL(AUTH_PAGES.SIGN_IN, request.nextUrl));
-    redirect.cookies.delete('accessToken', { path: '/' });
-    // refreshToken HttpOnly — сбрасываем с теми же флагами, что пишет API
-    redirect.cookies.set('refreshToken', '', {
-      path: '/',
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-      maxAge: 0,
-    });
+    clearAuthCookies(redirect);
     return redirect;
   }
 
@@ -87,14 +93,7 @@ export async function middleware(request: NextRequest) {
     // Refresh не удался — не оставляем мёртвый refreshToken мешать новому логину
     if (hasRefresh) {
       const response = NextResponse.next();
-      response.cookies.delete('accessToken', { path: '/' });
-      response.cookies.set('refreshToken', '', {
-        path: '/',
-        httpOnly: true,
-        secure: true,
-        sameSite: 'none',
-        maxAge: 0,
-      });
+      clearAuthCookies(response);
       return response;
     }
   }
